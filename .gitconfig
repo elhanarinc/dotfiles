@@ -1,48 +1,49 @@
 [user]
-	name = Arinc Elhan
-	email = elhanarinc@gmail.com
-[alias]
-  # Show branch tree in a nice way
-	lg2 = log --color --graph --all --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit
-	lg3 = log --graph --abbrev-commit --decorate --date=relative --format=format:'%C(bold blue)%h%C(reset) - %C(bold green)(%ar)%C(reset) %C(white)%s%C(reset) %C(dim white)- %an%C(reset)%C(bold yellow)%d%C(reset)' --all
-	lg = log --graph --abbrev-commit --decorate --format=format:'%C(red)%h%C(reset) - %C(bold cyan)%aD%C(reset) %C(green)(%ar)%C(reset)%C(bold yellow)%d%C(reset)%n''          %C(bold blue)<%an> -%C(reset) %C(white)%s%C(reset) ' 
-	lg1 = log --graph --abbrev-commit --decorate --format=format:'%C(ul yellow)%h%C(reset) - %C(bold cyan)%aD%C(reset) %C(green)(%ar)%C(reset)%C(bold yellow)%d%C(reset)%n''          %C(bold blue)<%an> -%C(reset) %C(white)%s%C(reset) %n%b' --patch --minimal --stat 
+    name = Arinc Elhan
+    email = elhanarinc@gmail.com
 
-	aa = add -u
-	st = status -sb
-	dcs = diff
-	dsh = diff --staged
-	dch = diff HEAD
-    dni = diff --no-index
-	dcst = difftool
-	dsht = difftool --staged
-	dcht = difftool HEAD
-	unstage = reset HEAD --
-	rsth = reset --hard HEAD
-	rsts = checkout -- .
+[github]
+    user = elhanarinc
+
+[color]
+    ui = true
+
+[color "branch"]
+    current = blue reverse
+    local = blue
+    remote = red
+
+[color "status"]
+    added = yellow
+    changed = cyan
+    untracked = red
+
+[alias]
+    st = status
+    cmt = commit
+    br = branch
+    co = checkout
+    lg = log -p
+    lol = log --graph --decorate --pretty=oneline --abbrev-commit
+    unstage = !sh -c 'git reset --hard HEAD && git clean -fd'
+    put = push origin HEAD
+    update = !sh -c 'git stash && git pull && git stash pop'
+    addnonew = add -u
     addall = add -A
-    addmodified = add -u
-	co = checkout
-	mg = merge --edit --no-ff
-	tree = log --oneline --decorate --all --graph
-    remotedelete = push origin --delete
+    addnodel = add .
 
 [core]
-	excludesfile = ~/.gitignore
-	pager = less
-	editor = vim
-[color]
-	ui = true
+    excludesfile = ~/.gitignore
+    pager = less
+    editor = vim
 
-# current - push the current branch to a branch of the same name.
 [push]
-	default = current
-
-# Put this file into your home directory
+    default = current
 
 [diff]
-	#external = "~/bin/git_difftool"
-	tool = vimdiff
+    renames = true
+    mnemonicprefix = true
+    tool = vimdiff
+
 [difftool]
-	prompt = false
-#	tool = vimdiff
+    prompt = false
