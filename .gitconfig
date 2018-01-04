@@ -19,23 +19,22 @@
     untracked = red
 
 [alias]
-    st = status
-    cmt = commit
     br = branch
     co = checkout
     lg = log -p
+    st = status
+    cmt = commit
     lol = log --graph --decorate --pretty=oneline --abbrev-commit
     unstage = !sh -c 'git reset --hard HEAD && git clean -fd'
-    put = push origin HEAD
     update = !sh -c 'git stash && git pull && git stash pop'
-    addnonew = add -u
     addall = add -A
-    addnodel = add .
+    list = branch -a
+    renew = !sh -c 'git remote update --prune && git branch -a'
 
 [core]
     excludesfile = ~/.gitignore
     pager = less
-    editor = vim
+    editor = meld
 
 [push]
     default = current
@@ -43,7 +42,7 @@
 [diff]
     renames = true
     mnemonicprefix = true
-    tool = vimdiff
+    tool = meld
 
 [difftool]
     prompt = false
