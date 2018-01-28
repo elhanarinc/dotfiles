@@ -9,9 +9,4 @@ export PS1="\[$(tput bold)\][\[$(tput sgr0)\]\[\033[38;5;39m\]\u\[$(tput sgr0)\]
 export CLICOLOR=1
 export LSCOLORS=ExFxBxDxCxegedabagacad
 
-export HADOOP_HOME=/usr/local/hadoop
-export JAVA_HOME=/usr/lib/jvm/java-8-oracle/jre
-export PATH=$PATH:$JAVA_HOME/bin
-export PATH=$PATH:$HADOOP_HOME/bin
-
 source ~/.aliases

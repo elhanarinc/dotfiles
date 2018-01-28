@@ -34,7 +34,7 @@
 [core]
     excludesfile = ~/.gitignore
     pager = less
-    editor = meld
+    editor = vim
 
 [push]
     default = current
@@ -42,7 +42,6 @@
 [diff]
     renames = true
     mnemonicprefix = true
-    tool = meld
 
 [difftool]
     prompt = false

@@ -4,7 +4,7 @@ set secure
 set title
 filetype plugin indent on
 
-colorscheme zenburn
+colorscheme monokai
 
 set autoindent
 set si
