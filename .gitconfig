@@ -34,7 +34,6 @@
 [core]
     excludesfile = ~/.gitignore
     pager = less
-    editor = vim
 
 [push]
     default = current

@@ -4,7 +4,7 @@ set secure
 set title
 filetype plugin indent on
 
-colorscheme monokai
+colorscheme zenburn
 
 set autoindent
 set si
@@ -22,9 +22,9 @@ set novisualbell
 
 set ffs=unix,dos,mac
 
-set tabstop=4
-set softtabstop=0
-set shiftwidth=4
+set tabstop=2
+set softtabstop=2
+set shiftwidth=2
 set expandtab
 set smarttab
 
