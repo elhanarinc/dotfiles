@@ -24,3 +24,5 @@ alias afk="/System/Library/CoreServices/Menu\ Extras/User.menu/Contents/Resource
 # Delete derived data
 alias deleteDerivedData='rm -rf ~/Library/Developer/Xcode/DerivedData/*'
 
+# Sync local and remote branches
+alias branchsync="git branch -vv | grep -v 'origin/' | awk '{ print $1; }' | xargs git branch -d"
