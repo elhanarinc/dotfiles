@@ -26,3 +26,6 @@ alias deleteDerivedData='rm -rf ~/Library/Developer/Xcode/DerivedData/*'
 
 # Sync local and remote branches
 alias branchsync="git branch -vv | grep '\: gone\]' | awk '{ print \$1; }' | xargs git branch -d"
+
+# Disable security in chrome
+alias start_chrome_disabled_security='open /Applications/Google\ Chrome.app --args --user-data-dir=/var/tmp/Chrome_dev_2 --disable-web-security --disable-site-isolation-trials'
