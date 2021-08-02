@@ -1,7 +1,7 @@
 alias grep='grep --color=auto'
 alias fgrep='fgrep --color=auto'
 alias egrep='egrep --color=auto'
-alias ll='ls -al'
+alias ll='ls -al --color=auto'
 
 # Stopwatch
 alias timer='echo "Timer started. Stop with Ctrl-D." && date && time cat && date'
@@ -15,17 +15,11 @@ alias badge="tput bel"
 # Reload the shell (i.e. invoke as a login shell)
 alias reload="exec $SHELL -l"
 
-# Update
+# Update macos
 alias update='sudo softwareupdate -i -a; brew update; brew upgrade; brew cleanup'
 
-# Lock the screen (when going AFK)
-alias afk="/System/Library/CoreServices/Menu\ Extras/User.menu/Contents/Resources/CGSession -suspend"
-
-# Delete derived data
 alias deleteDerivedData='rm -rf ~/Library/Developer/Xcode/DerivedData/*'
-
-# Sync local and remote branches
-alias branchsync="git branch -vv | grep '\: gone\]' | awk '{ print \$1; }' | xargs git branch -d"
 
 # Disable security in chrome
 alias start_chrome_disabled_security='open /Applications/Google\ Chrome.app --args --user-data-dir=/var/tmp/Chrome_dev_2 --disable-web-security --disable-site-isolation-trials'
+
