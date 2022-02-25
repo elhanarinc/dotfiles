@@ -1,7 +1,12 @@
 alias grep='grep --color=auto'
 alias fgrep='fgrep --color=auto'
 alias egrep='egrep --color=auto'
-alias ll='ls -al --color=auto'
+
+## Colorize the ls output ##
+alias ls='ls -G'
+
+## Use a long listing format ##
+alias ll='ls -la'
 
 # Stopwatch
 alias timer='echo "Timer started. Stop with Ctrl-D." && date && time cat && date'
@@ -13,13 +18,17 @@ alias ip="dig +short myip.opendns.com @resolver1.opendns.com"
 alias badge="tput bel"
 
 # Reload the shell (i.e. invoke as a login shell)
-alias reload="exec $SHELL -l"
+alias reload="source ~/.zshrc"
 
-# Update macos
+# Update
 alias update='sudo softwareupdate -i -a; brew update; brew upgrade; brew cleanup'
 
+# Lock the screen (when going AFK)
+alias afk="osascript -e 'tell application \"System Events\" to keystroke \"q\" using {command down,control down}'"
+
+# Delete derived data
 alias deleteDerivedData='rm -rf ~/Library/Developer/Xcode/DerivedData/*'
 
-# Disable security in chrome
-alias start_chrome_disabled_security='open /Applications/Google\ Chrome.app --args --user-data-dir=/var/tmp/Chrome_dev_2 --disable-web-security --disable-site-isolation-trials'
+# kubectl shell autocompletion
+complete -F __start_kubectl k
 
