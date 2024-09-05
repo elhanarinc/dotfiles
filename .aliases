@@ -14,9 +14,6 @@ alias timer='echo "Timer started. Stop with Ctrl-D." && date && time cat && date
 # IP addresses
 alias ip="dig +short myip.opendns.com @resolver1.opendns.com"
 
-# (useful when executing time-consuming commands)
-alias badge="tput bel"
-
 # Reload the shell (i.e. invoke as a login shell)
 alias reload="source ~/.zshrc"
 
@@ -25,9 +22,6 @@ alias update='sudo softwareupdate -i -a; brew update; brew upgrade; brew cleanup
 
 # Lock the screen (when going AFK)
 alias afk="osascript -e 'tell application \"System Events\" to keystroke \"q\" using {command down,control down}'"
-
-# Delete derived data
-alias deleteDerivedData='rm -rf ~/Library/Developer/Xcode/DerivedData/*'
 
 # kubectl shell autocompletion
 complete -F __start_kubectl k

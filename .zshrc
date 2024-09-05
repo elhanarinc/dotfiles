@@ -1,6 +1,5 @@
 # If you come from bash you might have to change your $PATH.
 export PATH=$HOME/bin:/usr/local/bin:$PATH
-export PATH="/usr/local/opt/gnu-sed/libexec/gnubin:$PATH"
 
 # Path to your oh-my-zsh installation.
 export ZSH=$HOME/.oh-my-zsh
@@ -117,17 +116,6 @@ fi
 [[ -r "/usr/local/etc/profile.d/bash_completion.sh" ]] && . "/usr/local/etc/profile.d/bash_completion.sh"
 
 source ~/.aliases
- 
-export NVM_DIR="$([ -z "${XDG_CONFIG_HOME-}" ] && printf %s "${HOME}/.nvm" || printf %s "${XDG_CONFIG_HOME}/nvm")"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" # This loads nvm
-
-# The next line updates PATH for the Google Cloud SDK.
-if [ -f '/Users/leoric/Documents/google-cloud-sdk/path.zsh.inc' ]; then . '/Users/leoric/Documents/google-cloud-sdk/path.zsh.inc'; fi
-
-# The next line enables shell command completion for gcloud.
-if [ -f '/Users/leoric/Documents/google-cloud-sdk/completion.zsh.inc' ]; then . '/Users/leoric/Documents/google-cloud-sdk/completion.zsh.inc'; fi
 
 [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
-
-nvm use 14.17
 
