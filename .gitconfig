@@ -5,6 +5,9 @@
 [github]
     user = elhanarinc
 
+[init]
+    defaultBranch = master
+
 [color]
     ui = true
 
@@ -21,19 +24,42 @@
 [alias]
     br = branch
     co = checkout
+    sw = switch
+    new = switch -c
     lg = log -p
     st = status
     cmt = commit
     lol = log --graph --decorate --pretty=oneline --abbrev-commit
-    unstage = !sh -c 'git reset --hard HEAD && git clean -fd'
-    update = !sh -c 'git stash && git pull && git stash pop'
+    unstage = restore --staged
+    nuke = !git reset --hard HEAD && git clean -fd
+    update = !git stash && git pull && git stash pop
     addall = add -A
     list = branch -a
-    renew = !sh -c 'git remote update --prune && git branch -a'
+    renew = !git remote update --prune && git branch -a
+    uncommit = reset --soft HEAD~1
+    aliases = config --get-regexp alias
+    contributors = shortlog --summary --numbered --no-merges
 
 [core]
     excludesfile = ~/.gitignore
-    pager = less
+    pager = delta
+    autocrlf = input
+    editor = vim
+
+[delta]
+    navigate = true
+    light = false
+    side-by-side = true
+    line-numbers = true
+
+[interactive]
+    diffFilter = delta --color-only
+
+[pull]
+    rebase = false
+
+[fetch]
+    prune = true
 
 [push]
     default = current
@@ -44,3 +70,6 @@
 
 [difftool]
     prompt = false
+
+[merge]
+    conflictstyle = zdiff3

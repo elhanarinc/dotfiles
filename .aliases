@@ -1,28 +1,114 @@
+# =============================================================
+# Search
+# =============================================================
 alias grep='grep --color=auto'
 alias fgrep='fgrep --color=auto'
 alias egrep='egrep --color=auto'
 
-## Colorize the ls output ##
-alias ls='ls -G'
+# =============================================================
+# File listing — eza with fallback to ls
+# =============================================================
+if command -v eza &>/dev/null; then
+  alias ls='eza --icons --group-directories-first'
+  alias ll='eza -la --icons --group-directories-first --git'
+  alias la='eza -la --icons --group-directories-first'
+  alias lt='eza --tree --icons --level=2'
+  alias l='eza -l --icons --group-directories-first'
+else
+  alias ls='ls -G'
+  alias ll='ls -la'
+  alias la='ls -la'
+  alias l='ls -l'
+fi
 
-## Use a long listing format ##
-alias ll='ls -la'
+# =============================================================
+# File viewing — bat with fallback to cat
+# =============================================================
+if command -v bat &>/dev/null; then
+  alias cat='bat --paging=never'
+  alias less='bat'
+fi
 
-# Stopwatch
-alias timer='echo "Timer started. Stop with Ctrl-D." && date && time cat && date'
+# =============================================================
+# Navigation
+# =============================================================
+alias ..='cd ..'
+alias ...='cd ../..'
+alias ....='cd ../../..'
+alias ~='cd ~'
+alias dotfiles='cd ~/Desktop/dotfiles'
 
-# IP addresses
+# =============================================================
+# Networking
+# =============================================================
 alias ip="dig +short myip.opendns.com @resolver1.opendns.com"
+alias myip='curl -s https://api.ipify.org && echo'
+alias localip="ipconfig getifaddr en0"
 
-# Reload the shell (i.e. invoke as a login shell)
-alias reload="source ~/.zshrc"
+# =============================================================
+# Shell
+# =============================================================
+alias reload="exec zsh"
+alias path='echo $PATH | tr ":" "\n"'
+alias week='date +%V'
 
-# Update
-alias update='sudo softwareupdate -i -a; brew update; brew upgrade; brew cleanup'
+# =============================================================
+# System (macOS only)
+# =============================================================
+if [[ "$(uname)" == "Darwin" ]]; then
+  alias update='sudo softwareupdate -i -a; brew update; brew upgrade; brew cleanup'
+  alias afk="osascript -e 'tell application \"System Events\" to keystroke \"q\" using {command down,control down}'"
+  alias showfiles='defaults write com.apple.finder AppleShowAllFiles YES; killall Finder'
+  alias hidefiles='defaults write com.apple.finder AppleShowAllFiles NO; killall Finder'
+  alias flushdns='sudo dscacheutil -flushcache; sudo killall -HUP mDNSResponder'
+  alias pubkey='cat ~/.ssh/id_rsa.pub | pbcopy && echo "SSH public key copied to clipboard"'
+fi
 
-# Lock the screen (when going AFK)
-alias afk="osascript -e 'tell application \"System Events\" to keystroke \"q\" using {command down,control down}'"
+# =============================================================
+# Git (supplements oh-my-zsh git plugin)
+# =============================================================
+alias gst='git status'
+alias gco='git checkout'
+alias gcb='git checkout -b'
+alias gpl='git pull'
+alias gps='git push'
+alias glog='git log --oneline --graph --decorate'
 
-# kubectl shell autocompletion
-complete -F __start_kubectl k
+# =============================================================
+# Docker
+# =============================================================
+alias dps='docker ps'
+alias dpa='docker ps -a'
+alias di='docker images'
+alias dex='docker exec -it'
+alias dlog='docker logs -f'
+alias dprune='docker system prune -af'
 
+# =============================================================
+# Kubernetes
+# =============================================================
+alias kgp='kubectl get pods'
+alias kgs='kubectl get services'
+alias kgn='kubectl get nodes'
+alias kgd='kubectl get deployments'
+alias kns='kubectl config set-context --current --namespace'
+alias kctx='kubectl config use-context'
+alias kdesc='kubectl describe'
+alias klogs='kubectl logs -f'
+
+# =============================================================
+# Terraform
+# =============================================================
+alias tf='terraform'
+alias tfi='terraform init'
+alias tfp='terraform plan'
+alias tfa='terraform apply'
+alias tfd='terraform destroy'
+alias tfo='terraform output'
+
+# =============================================================
+# Utilities
+# =============================================================
+alias timer='echo "Timer started. Stop with Ctrl-D." && date && time cat && date'
+alias mkcd='() { mkdir -p "$1" && cd "$1"; }'
+alias cl='clear'

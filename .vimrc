@@ -11,11 +11,16 @@ set si
 set wrap
 
 set number
+set relativenumber
 set wildmenu
 set showmatch
 set autoread
 set magic
 set hlsearch
+set incsearch
+set scrolloff=5
+set laststatus=2
+set ruler
 
 set noerrorbells
 set novisualbell
@@ -31,7 +36,6 @@ set mouse=a
 
 set nocompatible
 set nostartofline
-set esckeys
 set backspace=indent,eol,start
 set ttyfast
 

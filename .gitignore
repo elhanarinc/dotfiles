@@ -1,0 +1,7 @@
+.zshrc.local
+*.local
+.DS_Store
+.env
+*.swp
+*~
+Brewfile.lock.json
