@@ -1,0 +1,72 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# ~/.config/ghostty/config
+# ─────────────────────────────────────────────────────────────────────────────
+
+# ─── Font ─────────────────────────────────────────────────────────────────────
+font-family = JetBrains Mono
+font-size = 14
+font-thicken = true
+
+# ─── Theme ────────────────────────────────────────────────────────────────────
+# Run `ghostty +list-themes` to browse all built-in themes
+theme = catppuccin-mocha
+
+# ─── Cursor ───────────────────────────────────────────────────────────────────
+cursor-style = bar
+cursor-style-blink = true
+
+# ─── Window ───────────────────────────────────────────────────────────────────
+window-padding-x = 10
+window-padding-y = 8
+window-padding-balance = true
+background-opacity = 0.96
+macos-titlebar-style = tabs
+macos-window-shadow = true
+
+# ─── Shell Integration ────────────────────────────────────────────────────────
+# Enables: cursor changes at prompt, semantic marks, window title updates
+# Auto-disables conflicting features inside tmux sessions
+shell-integration = zsh
+shell-integration-features = cursor,sudo,title
+
+# ─── macOS ────────────────────────────────────────────────────────────────────
+# Left Option → Meta/Alt (vim, readline word-nav)
+# Right Option → still types Unicode (ø, å, ™, etc.)
+macos-option-as-alt = left
+
+# ─── Mouse & scrollback ───────────────────────────────────────────────────────
+mouse-hide-while-typing = true
+copy-on-select = false
+scrollback-limit = 10000
+link-url = true
+
+# ─── Quick Terminal (Quake-style dropdown) ────────────────────────────────────
+# Toggle from anywhere — even when Ghostty is not focused
+quick-terminal-position = top
+quick-terminal-size = 60
+quick-terminal-animation-duration = 0.15
+quick-terminal-autohide = true
+
+# ─── Keybindings ──────────────────────────────────────────────────────────────
+keybind = global:cmd+grave=toggle_quick_terminal
+
+keybind = cmd+shift+r=reload_config
+keybind = cmd+equal=increase_font_size:1
+keybind = cmd+minus=decrease_font_size:1
+keybind = cmd+zero=reset_font_size
+
+keybind = cmd+t=new_tab
+keybind = cmd+w=close_surface
+keybind = cmd+shift+[=previous_tab
+keybind = cmd+shift+]=next_tab
+keybind = cmd+shift+enter=toggle_fullscreen
+
+keybind = cmd+d=new_split:right
+keybind = cmd+shift+d=new_split:down
+
+# Jump between shell prompts (requires shell integration)
+keybind = shift+up=jump_to_prompt:-1
+keybind = shift+down=jump_to_prompt:1
+
+keybind = cmd+k=clear_screen
+keybind = cmd+shift+f=search

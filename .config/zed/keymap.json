@@ -1,0 +1,20 @@
+[
+  // ─── Pane navigation (ctrl-hjkl) ──────────────────────────────────────────
+  {
+    "context": "Dock || Panel || Editor",
+    "bindings": {
+      "ctrl-h": ["workspace::ActivatePaneInDirection", "Left"],
+      "ctrl-l": ["workspace::ActivatePaneInDirection", "Right"],
+      "ctrl-k": ["workspace::ActivatePaneInDirection", "Up"],
+      "ctrl-j": ["workspace::ActivatePaneInDirection", "Down"]
+    }
+  },
+
+  // ─── Terminal: pass ctrl-a through to tmux ────────────────────────────────
+  {
+    "context": "Terminal",
+    "bindings": {
+      "ctrl-a": ["terminal::SendText", "\u0001"]
+    }
+  }
+]

@@ -47,6 +47,7 @@ brew "watch"            # Execute command periodically
 brew "tmux"             # Terminal multiplexer
 brew "vim"              # Text editor
 brew "tree"             # Directory tree view
+brew "lazygit"          # Terminal UI for git (used in Zed tasks)
 
 # ============================================================
 # Languages & runtimes
@@ -84,6 +85,12 @@ brew "mysql-client"     # MySQL CLI (no server)
 # ============================================================
 cask "font-jetbrains-mono-nerd-font"
 cask "font-fira-code-nerd-font"
+
+# ============================================================
+# Editors & terminals
+# ============================================================
+cask "zed"              # Zed editor (config: .config/zed/)
+cask "ghostty"          # Ghostty terminal (config: .config/ghostty/)
 
 # ============================================================
 # Java

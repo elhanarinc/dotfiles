@@ -268,6 +268,16 @@ create_symlinks() {
   mkdir -p "$HOME/.config"
   backup_and_link "$DOTFILES_DIR/.config/starship.toml" "$HOME/.config/starship.toml"
 
+  # Zed editor config
+  mkdir -p "$HOME/.config/zed"
+  backup_and_link "$DOTFILES_DIR/.config/zed/settings.json" "$HOME/.config/zed/settings.json"
+  backup_and_link "$DOTFILES_DIR/.config/zed/keymap.json"   "$HOME/.config/zed/keymap.json"
+  backup_and_link "$DOTFILES_DIR/.config/zed/tasks.json"    "$HOME/.config/zed/tasks.json"
+
+  # Ghostty terminal config
+  mkdir -p "$HOME/.config/ghostty"
+  backup_and_link "$DOTFILES_DIR/.config/ghostty/config" "$HOME/.config/ghostty/config"
+
   # Vim colors directory
   mkdir -p "$HOME/.vim"
   backup_and_link "$DOTFILES_DIR/.vim/colors"         "$HOME/.vim/colors"
@@ -306,8 +316,10 @@ post_install_message() {
   echo "       - Add Google Cloud SDK paths"
   echo "       - Add Windsurf/Antigravity/OpenCode paths"
   echo "  3. Set your terminal font to a Nerd Font for icons:"
-  echo "       Recommended: JetBrains Mono Nerd Font"
-  echo "       (installed via Brewfile, set in terminal preferences)"
+  echo "       Ghostty: font is pre-configured via .config/ghostty/config"
+  echo "       Other terminals: set JetBrains Mono Nerd Font in preferences"
+  echo "  4. Install the Tokyo Night theme in Zed:"
+  echo "       cmd+shift+p → 'zed: extensions' → search 'Tokyo Night'"
   echo ""
   echo -e "${BOLD}Installed plugins (oh-my-zsh):${NC}"
   echo "  - zsh-autosuggestions   (fish-like suggestions)"
