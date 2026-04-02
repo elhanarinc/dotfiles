@@ -41,7 +41,7 @@ Then restart your terminal.
 
 ### Editors & Terminals
 - **Zed** — editor with vim mode, LSP for Go/Python/TS/Ruby, Claude AI
-- **Ghostty** — terminal with shell integration, Tokyo Night theme, quick dropdown
+- **Ghostty** — terminal with shell integration, Catppuccin Mocha theme, quick dropdown
 
 ### Fonts
 - JetBrains Mono Nerd Font _(set this in your terminal preferences for icons)_
@@ -74,7 +74,7 @@ Config lives in `.config/zed/` and is symlinked to `~/.config/zed/`. Three files
 | `tasks.json` | `lazygit` task (triggered via `<space>gg`) |
 
 **First-time setup:**
-1. Install the theme: `cmd+shift+p` → "zed: extensions" → search **Tokyo Night**
+1. Install the theme: `cmd+shift+p` → "zed: extensions" → search **Catppuccin Themes**
 2. Set your Anthropic API key: agent panel → gear icon → paste key
    (or add `ANTHROPIC_API_KEY` to `~/.zshrc.local`)
 
@@ -99,7 +99,7 @@ Config lives in `.config/ghostty/config` and is symlinked to `~/.config/ghostty/
 
 **Highlights:**
 - Font: JetBrains Mono Nerd Font, size 14
-- Theme: Tokyo Night (matches Zed)
+- Theme: Catppuccin Mocha (matches Zed dark theme)
 - Left Option key → Meta/Alt (vim, readline word navigation)
 - Right Option key → still types Unicode (ø, å, ™, etc.)
 - Shell integration: semantic prompt marks, cursor changes at prompt
@@ -143,6 +143,16 @@ Prefix is `Ctrl+a` (not the default `Ctrl+b`).
 | `prefix [` then `v` | Start vi copy selection |
 | `prefix [` then `y` | Copy selection |
 
+### Tmux Plugin Manager (tpm)
+
+tpm is installed automatically by `install.sh`. Plugins: `tmux-sensible`, `tmux-resurrect` (session persistence), `tmux-continuum` (auto-save every 15 min).
+
+| Command | Action |
+|---------|--------|
+| `prefix+I` | Install plugins |
+| `prefix+U` | Update plugins |
+| `prefix+alt+u` | Remove unused plugins |
+
 ## Staying Up to Date
 
 ```bash
@@ -156,12 +166,13 @@ git pull
 ```
 dotfiles/
 ├── .zshrc                   # Main shell config
-├── .zshrc.local.example     # Template for machine-specific config
+├── .zshrc.local.example     # Template for machine-specific config (API keys, paths)
+├── .bash_profile            # Bash fallback (sources .zshrc on macOS login shells)
 ├── .aliases                 # Shell aliases
 ├── .gitconfig               # Git configuration
 ├── .gitignore               # Repo gitignore
 ├── .vimrc                   # Vim configuration
-├── .inputrc                 # Readline config
+├── .inputrc                 # Readline config (history search, vi-mode keybindings)
 ├── .tmux.conf               # Tmux configuration
 ├── .config/
 │   ├── starship.toml        # Starship prompt config

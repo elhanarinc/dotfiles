@@ -50,6 +50,13 @@ brew "tree"             # Directory tree view
 brew "lazygit"          # Terminal UI for git (used in Zed tasks)
 
 # ============================================================
+# Formatters (used by Zed on save)
+# ============================================================
+brew "prettier"         # JS/TS/JSON/YAML formatter
+# goimports: go install golang.org/x/tools/cmd/goimports@latest  (installed in install.sh)
+# autopep8/black/isort/mypy: pip install ... (installed in install.sh)
+
+# ============================================================
 # Languages & runtimes
 # ============================================================
 brew "go"

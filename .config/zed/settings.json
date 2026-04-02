@@ -1,16 +1,17 @@
 // Zed settings
 {
   // ─── Theme ────────────────────────────────────────────────────────────────
+  // Install via: cmd+shift+p → "zed: extensions" → search "Catppuccin Themes"
   "theme": {
     "mode": "system",
-    "light": "One Light",
-    "dark": "One Dark"
+    "light": "Catppuccin Latte",
+    "dark": "Catppuccin Mocha"
   },
 
   // ─── Fonts ────────────────────────────────────────────────────────────────
   "buffer_font_family": "JetBrains Mono",
   "buffer_font_size": 14,
-  "ui_font_size": 14,
+  "ui_font_size": 15,
 
   // ─── Editor ───────────────────────────────────────────────────────────────
   "base_keymap": "VSCode",

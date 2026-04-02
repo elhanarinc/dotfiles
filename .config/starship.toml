@@ -1,5 +1,29 @@
 "$schema" = 'https://starship.rs/config-schema.json'
 
+# Catppuccin Mocha palette — matches Ghostty and Zed themes
+palette = "catppuccin_mocha"
+
+[palettes.catppuccin_mocha]
+rosewater = "#f5e0dc"
+flamingo  = "#f2cdcd"
+pink      = "#f5c2e7"
+mauve     = "#cba6f7"
+red       = "#f38ba8"
+maroon    = "#eba0ac"
+peach     = "#fab387"
+yellow    = "#f9e2af"
+green     = "#a6e3a1"
+teal      = "#94e2d5"
+sky       = "#89dceb"
+sapphire  = "#74c7ec"
+blue      = "#89b4fa"
+lavender  = "#b4befe"
+text      = "#cdd6f4"
+subtext1  = "#bac2de"
+overlay2  = "#9399b2"
+surface1  = "#45475a"
+base      = "#1e1e2e"
+
 # Add a blank line before the prompt
 add_newline = true
 
@@ -51,7 +75,7 @@ read_only = " 󰌾"
 [git_branch]
 format = "[$symbol$branch(:$remote_branch)]($style) "
 symbol = " "
-style = "bold purple"
+style = "bold mauve"
 
 [git_status]
 format = '([\[$all_status$ahead_behind\]]($style) )'
@@ -79,7 +103,7 @@ detect_files = ["requirements.txt", "pyproject.toml", "setup.py", ".python-versi
 [golang]
 format = "[$symbol$version]($style) "
 symbol = " "
-style = "bold cyan"
+style = "bold sky"
 detect_files = ["go.mod", "go.sum", "go.work"]
 
 [nodejs]
@@ -92,7 +116,7 @@ not_capable_style = "bold red"
 [rust]
 format = "[$symbol$version]($style) "
 symbol = " "
-style = "bold orange"
+style = "bold peach"
 
 # =============================================================
 # Kubernetes — enabled (show active context)
@@ -100,7 +124,7 @@ style = "bold orange"
 [kubernetes]
 disabled = false
 format = "[$symbol$context( \\($namespace\\))]($style) "
-style = "bold cyan"
+style = "bold teal"
 symbol = "⎈ "
 
 # =============================================================

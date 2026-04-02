@@ -204,6 +204,63 @@ install_nvm() {
 }
 
 # ============================================================
+# Dev formatters (goimports, autopep8, black, isort, mypy)
+# ============================================================
+install_dev_formatters() {
+  header "Dev Formatters"
+
+  # goimports (Go formatter for Zed)
+  if command_exists go; then
+    if ! command_exists goimports; then
+      info "Installing goimports..."
+      go install golang.org/x/tools/cmd/goimports@latest
+      success "goimports installed"
+    else
+      info "goimports already installed, skipping"
+    fi
+  else
+    warn "go not found, skipping goimports"
+  fi
+
+  # Python formatters (autopep8, black, isort, mypy)
+  local pip_cmd
+  if command_exists pip3; then
+    pip_cmd="pip3"
+  elif command_exists pip; then
+    pip_cmd="pip"
+  else
+    warn "pip not found, skipping Python formatters"
+    return 0
+  fi
+
+  local python_tools=(autopep8 black isort mypy)
+  for tool in "${python_tools[@]}"; do
+    if ! command_exists "$tool"; then
+      info "Installing $tool..."
+      "$pip_cmd" install --quiet "$tool"
+      success "$tool installed"
+    else
+      info "$tool already installed, skipping"
+    fi
+  done
+}
+
+# ============================================================
+# Tmux Plugin Manager (tpm)
+# ============================================================
+install_tpm() {
+  header "Tmux Plugin Manager (tpm)"
+  local tpm_dir="$HOME/.tmux/plugins/tpm"
+  if [[ -d "$tpm_dir" ]]; then
+    info "tpm already installed, skipping"
+    return 0
+  fi
+  info "Installing tpm..."
+  git clone --depth=1 https://github.com/tmux-plugins/tpm "$tpm_dir"
+  success "tpm installed — run prefix+I inside tmux to install plugins"
+}
+
+# ============================================================
 # fzf shell integration (if installed via brew)
 # ============================================================
 setup_fzf() {
@@ -318,8 +375,9 @@ post_install_message() {
   echo "  3. Set your terminal font to a Nerd Font for icons:"
   echo "       Ghostty: font is pre-configured via .config/ghostty/config"
   echo "       Other terminals: set JetBrains Mono Nerd Font in preferences"
-  echo "  4. Install the Tokyo Night theme in Zed:"
-  echo "       cmd+shift+p → 'zed: extensions' → search 'Tokyo Night'"
+  echo "  4. Install the Catppuccin theme in Zed:"
+  echo "       cmd+shift+p → 'zed: extensions' → search 'Catppuccin Themes'"
+  echo "  5. Inside tmux, run prefix+I to install tpm plugins (resurrect, continuum)"
   echo ""
   echo -e "${BOLD}Installed plugins (oh-my-zsh):${NC}"
   echo "  - zsh-autosuggestions   (fish-like suggestions)"
@@ -364,6 +422,8 @@ main() {
   install_omz_plugins
   install_starship
   install_nvm
+  install_tpm
+  install_dev_formatters
   setup_fzf
   create_symlinks
   setup_local_config
