@@ -15,7 +15,13 @@
       "Bash(grep -E \"^\\(eza|bat|zoxide|fzf|starship|delta|atuin|stow|kubectl|helm|gh|jq|yq|rg|tmux|terraform\\)$\")",
       "Bash(chmod:*)",
       "Bash(bash -n install.sh)",
-      "Bash(ssh-add:*)"
+      "Bash(ssh-add:*)",
+      "Read(//Users/appsamurai/**)",
+      "Read(//Users/appsamurai/.ssh/**)",
+      "Bash(ln -sf /Users/appsamurai/Desktop/dotfiles/.bash_profile ~/.bash_profile)",
+      "Bash(ln -sf /Users/appsamurai/Desktop/dotfiles/ssh/config ~/.ssh/config)",
+      "WebFetch(domain:zed.dev)",
+      "WebFetch(domain:github.com)"
     ]
   }
 }
