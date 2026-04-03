@@ -375,11 +375,11 @@ install_git_hooks() {
   for hook in "$hooks_src"/*; do
     local hook_name
     hook_name="$(basename "$hook")"
-    if [[ -f "$hooks_dst/$hook_name" ]] && [[ "$(readlink "$hooks_dst/$hook_name")" == "$hook" ]]; then
+    if [[ -L "$hooks_dst/$hook_name" ]] && [[ "$(readlink "$hooks_dst/$hook_name")" == "$hook" ]]; then
       info "Hook '$hook_name' already installed, skipping"
     else
-      cp "$hook" "$hooks_dst/$hook_name"
-      chmod +x "$hooks_dst/$hook_name"
+      ln -sf "$hook" "$hooks_dst/$hook_name"
+      chmod +x "$hook"
       success "Installed hook: $hook_name"
     fi
   done

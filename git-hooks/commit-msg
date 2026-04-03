@@ -191,7 +191,7 @@ validate_commit_message() {
   shopt -u nocasematch
   # 6. Subject regex check
   # ------------------------------------------------------------------------------
-  pat='(^(build|ci|docs|feat|fix|perf|refactor|style|test)(\([a-z0-9._%+-]+\))?(!)?: .+$)|^(Merge remote.+$)'
+  pat='(^(build|chore|ci|docs|feat|fix|perf|refactor|style|test)(\([a-z0-9._%+-]+\))?(!)?: .+$)|^(Merge remote.+$)'
   [[ ${COMMIT_SUBJECT} =~ $pat ]]
   test $? -eq 0 || add_warning 1 "Commit naming should be like refactor(transcoder): Perform mime type check with magic instead of file"
 }

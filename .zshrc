@@ -98,7 +98,7 @@ pnpm() { _nvm_load; pnpm "$@"; }
 # Ruby (Homebrew)
 # =============================================================
 if [[ "$(uname)" == "Darwin" ]] && command -v brew &>/dev/null; then
-  export PATH="/opt/homebrew/opt/ruby/bin:$PATH"
+  export PATH="$(brew --prefix)/opt/ruby/bin:$PATH"
 fi
 
 # =============================================================
@@ -124,9 +124,9 @@ alias k=kubectl
 # =============================================================
 # fzf
 # =============================================================
-[ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
-
-if command -v brew &>/dev/null; then
+if [ -f ~/.fzf.zsh ]; then
+  source ~/.fzf.zsh
+elif command -v brew &>/dev/null; then
   _fzf_prefix="$(brew --prefix fzf 2>/dev/null || echo '')"
   [ -f "$_fzf_prefix/shell/completion.zsh" ] && source "$_fzf_prefix/shell/completion.zsh"
   [ -f "$_fzf_prefix/shell/key-bindings.zsh" ] && source "$_fzf_prefix/shell/key-bindings.zsh"
