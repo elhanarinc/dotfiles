@@ -1,6 +1,17 @@
 // Zed settings
 {
     // ─── Fonts ────────────────────────────────────────────────────────────────
+    "agent_servers": {
+        "opencode": {
+            "type": "registry"
+        },
+        "codex-acp": {
+            "type": "registry"
+        },
+        "claude-acp": {
+            "type": "registry"
+        }
+    },
     "buffer_font_size": 13,
     "ui_font_size": 13,
 
@@ -183,6 +194,14 @@
     // ─── Session ──────────────────────────────────────────────────────────────
     "session": {
         "trust_all_worktrees": true,
+    },
+
+    // ─── Agent ────────────────────────────────────────────────────────────────
+    "agent": {
+        "commit_message_model": {
+            "provider": "zed.dev",
+            "model": "claude-sonnet-4-5",
+        },
     },
 
     // ─── Telemetry ────────────────────────────────────────────────────────────
