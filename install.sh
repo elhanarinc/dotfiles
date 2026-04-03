@@ -247,7 +247,7 @@ install_dev_formatters() {
   for tool in "${python_tools[@]}"; do
     if ! command_exists "$tool"; then
       info "Installing $tool..."
-      "$pip_cmd" install --quiet "$tool"
+      "$pip_cmd" install --quiet --break-system-packages "$tool"
       success "$tool installed"
     else
       info "$tool already installed, skipping"
@@ -349,7 +349,40 @@ create_symlinks() {
   mkdir -p "$HOME/.vim"
   backup_and_link "$DOTFILES_DIR/.vim/colors"         "$HOME/.vim/colors"
 
+  # Bash profile
+  backup_and_link "$DOTFILES_DIR/.bash_profile"       "$HOME/.bash_profile"
+
+  # SSH config
+  mkdir -p "$HOME/.ssh"
+  chmod 700 "$HOME/.ssh"
+  backup_and_link "$DOTFILES_DIR/ssh/config"          "$HOME/.ssh/config"
+  chmod 600 "$DOTFILES_DIR/ssh/config"
+
   success "All symlinks created"
+}
+
+# ============================================================
+# Git hooks (for dotfiles repo itself)
+# ============================================================
+install_git_hooks() {
+  header "Git Hooks"
+  local hooks_src="$DOTFILES_DIR/git-hooks"
+  local hooks_dst="$DOTFILES_DIR/.git/hooks"
+  if [[ ! -d "$hooks_src" ]]; then
+    info "No git-hooks directory found, skipping"
+    return 0
+  fi
+  for hook in "$hooks_src"/*; do
+    local hook_name
+    hook_name="$(basename "$hook")"
+    if [[ -f "$hooks_dst/$hook_name" ]] && [[ "$(readlink "$hooks_dst/$hook_name")" == "$hook" ]]; then
+      info "Hook '$hook_name' already installed, skipping"
+    else
+      cp "$hook" "$hooks_dst/$hook_name"
+      chmod +x "$hooks_dst/$hook_name"
+      success "Installed hook: $hook_name"
+    fi
+  done
 }
 
 # ============================================================
@@ -436,6 +469,7 @@ main() {
   install_dev_formatters
   setup_fzf
   create_symlinks
+  install_git_hooks
   setup_local_config
   post_install_message
 }

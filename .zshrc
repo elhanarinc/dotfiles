@@ -14,6 +14,11 @@ ZSH_THEME=""
 ZSH_DOTENV_PROMPT=false
 HIST_STAMPS="yyyy-mm-dd"
 
+# Homebrew completions — must be before oh-my-zsh source
+if command -v brew &>/dev/null; then
+  FPATH="$(brew --prefix)/share/zsh-completions:$(brew --prefix)/share/zsh/site-functions:$FPATH"
+fi
+
 # Plugins — order matters:
 # fzf-tab must come before zsh-syntax-highlighting
 plugins=(
@@ -23,8 +28,12 @@ plugins=(
   zsh-syntax-highlighting
   you-should-use
   kubectl
-  macos
 )
+
+# macOS-specific plugins
+if [[ "$(uname)" == "Darwin" ]]; then
+  plugins+=(macos)
+fi
 
 source "$ZSH/oh-my-zsh.sh"
 
@@ -54,7 +63,7 @@ if command -v go &>/dev/null || command -v brew &>/dev/null; then
   fi
   export GOPATH="$HOME/go"
   export GO111MODULE=on
-  export PATH="$PATH:${GOROOT:-}/bin:$GOPATH/bin"
+  export PATH="$PATH${GOROOT:+:$GOROOT/bin}:$GOPATH/bin"
 fi
 
 # =============================================================
@@ -113,13 +122,6 @@ fi
 alias k=kubectl
 
 # =============================================================
-# Homebrew completions
-# =============================================================
-if command -v brew &>/dev/null; then
-  FPATH="$(brew --prefix)/share/zsh-completions:$(brew --prefix)/share/zsh/site-functions:$FPATH"
-fi
-
-# =============================================================
 # fzf
 # =============================================================
 [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
@@ -147,7 +149,7 @@ fi
 # =============================================================
 # Aliases
 # =============================================================
-source ~/.aliases
+[ -f ~/.aliases ] && source ~/.aliases
 
 # =============================================================
 # Machine-specific config (not tracked in git)

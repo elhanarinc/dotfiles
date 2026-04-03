@@ -3,11 +3,6 @@
 # Run from dotfiles directory or pass: brew bundle --file=path/to/Brewfile
 
 # ============================================================
-# Taps
-# ============================================================
-tap "homebrew/bundle"
-
-# ============================================================
 # Core utilities
 # ============================================================
 brew "coreutils"        # GNU core utilities
