@@ -103,12 +103,12 @@
   // commit_message_model: zed.dev (Zed account — free 50/month)
   "agent": {
     "default_model": {
-      "provider": "copilot_chat",
-      "model": "claude-haiku-4.5"
+      "provider": "opencode",
+      "model": "qwen3.6-plus-free"
     },
     "commit_message_model": {
-      "provider": "zed.dev",
-      "model": "claude-3-5-haiku"
+      "provider": "opencode",
+      "model": "qwen3.6-plus-free"
     },
     "button": true,
     "dock": "right"
