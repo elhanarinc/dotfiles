@@ -14,7 +14,8 @@
       "Bash(grep -E \"^\\(eza|bat|zoxide|fzf|starship|delta|atuin|stow\\)$\")",
       "Bash(grep -E \"^\\(eza|bat|zoxide|fzf|starship|delta|atuin|stow|kubectl|helm|gh|jq|yq|rg|tmux|terraform\\)$\")",
       "Bash(chmod:*)",
-      "Bash(bash -n install.sh)"
+      "Bash(bash -n install.sh)",
+      "Bash(ssh-add:*)"
     ]
   }
 }
