@@ -3,6 +3,10 @@
     // ─── Fonts ────────────────────────────────────────────────────────────────
     "agent_servers": {
         "opencode": {
+            "favorite_models": [
+                "opencode/minimax-m2.5-free",
+                "opencode/qwen3.6-plus-free/medium"
+            ],
             "type": "registry"
         },
         "codex-acp": {
