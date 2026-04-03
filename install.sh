@@ -81,7 +81,8 @@ install_brew_packages() {
     return 0
   fi
   info "Installing packages from Brewfile (this may take a while)..."
-  brew bundle install --file="$DOTFILES_DIR/Brewfile" --no-lock
+  brew bundle install --file="$DOTFILES_DIR/Brewfile" --no-upgrade || \
+    warn "Some packages had issues (likely already installed casks). Continuing..."
   success "Brew packages installed"
 }
 
@@ -153,19 +154,28 @@ install_omz_plugins() {
   local plugins_dir="${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/plugins"
   mkdir -p "$plugins_dir"
 
-  declare -A PLUGINS=(
-    ["zsh-autosuggestions"]="https://github.com/zsh-users/zsh-autosuggestions"
-    ["zsh-syntax-highlighting"]="https://github.com/zsh-users/zsh-syntax-highlighting"
-    ["fzf-tab"]="https://github.com/Aloxaf/fzf-tab"
-    ["you-should-use"]="https://github.com/MichaelAquilina/zsh-you-should-use"
+  local plugin_names=(
+    "zsh-autosuggestions"
+    "zsh-syntax-highlighting"
+    "fzf-tab"
+    "you-should-use"
+  )
+  local plugin_urls=(
+    "https://github.com/zsh-users/zsh-autosuggestions"
+    "https://github.com/zsh-users/zsh-syntax-highlighting"
+    "https://github.com/Aloxaf/fzf-tab"
+    "https://github.com/MichaelAquilina/zsh-you-should-use"
   )
 
-  for plugin in "${!PLUGINS[@]}"; do
+  local i
+  for i in "${!plugin_names[@]}"; do
+    local plugin="${plugin_names[$i]}"
+    local url="${plugin_urls[$i]}"
     if [[ -d "$plugins_dir/$plugin" ]]; then
       info "Plugin '$plugin' already installed, skipping"
     else
       info "Installing plugin: $plugin"
-      git clone --depth=1 "${PLUGINS[$plugin]}" "$plugins_dir/$plugin"
+      git clone --depth=1 "$url" "$plugins_dir/$plugin"
       success "Installed: $plugin"
     fi
   done
