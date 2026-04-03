@@ -69,9 +69,9 @@ Config lives in `.config/zed/` and is symlinked to `~/.config/zed/`. Three files
 
 | File | Purpose |
 |------|---------|
-| `settings.json` | Editor, vim mode, LSP, terminal, AI (Claude), per-language overrides |
-| `keymap.json` | Space-leader vim bindings, pane navigation, lazygit |
-| `tasks.json` | `lazygit` task (triggered via `<space>gg`) |
+| `settings.json` | Editor, LSP, terminal, AI (Claude), per-language overrides |
+| `keymap.json` | Pane navigation, tmux passthrough |
+| `tasks.json` | `lazygit` task (run via task panel) |
 
 **First-time setup:**
 1. Install the theme: `cmd+shift+p` → "zed: extensions" → search **Catppuccin Themes**
@@ -168,8 +168,8 @@ dotfiles/
 ├── .config/
 │   ├── starship.toml        # Starship prompt config
 │   ├── zed/
-│   │   ├── settings.json    # Zed editor settings (vim, LSP, AI, terminal)
-│   │   ├── keymap.json      # Zed keybindings (space leader, pane nav)
+│   │   ├── settings.json    # Zed editor settings (LSP, AI, terminal)
+│   │   ├── keymap.json      # Zed keybindings (pane nav, tmux passthrough)
 │   │   └── tasks.json       # Zed tasks (lazygit)
 │   └── ghostty/
 │       └── config           # Ghostty terminal config

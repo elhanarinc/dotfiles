@@ -103,7 +103,6 @@
   // commit_message_model: zed.dev (Zed account — free 50/month)
   "agent": {
     "default_model": {
-      "enable_thinking": true,
       "provider": "copilot_chat",
       "model": "claude-haiku-4.5"
     },
