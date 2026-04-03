@@ -40,7 +40,7 @@ Then restart your terminal.
 - gh (GitHub CLI), jq, yq, tmux, vim, lazygit
 
 ### Editors & Terminals
-- **Zed** — editor with vim mode, LSP for Go/Python/TS/Ruby, Claude AI
+- **Zed** — editor with LSP for Go/Python/TS/Ruby, Claude AI
 - **Ghostty** — terminal with shell integration, Catppuccin Mocha theme, quick dropdown
 
 ### Fonts
@@ -78,27 +78,18 @@ Config lives in `.config/zed/` and is symlinked to `~/.config/zed/`. Three files
 2. Set your Anthropic API key: agent panel → gear icon → paste key
    (or add `ANTHROPIC_API_KEY` to `~/.zshrc.local`)
 
-**Key vim bindings:**
+**Key bindings:**
 
 | Binding | Action |
 |---------|--------|
-| `jk` (insert) | Exit to normal mode |
 | `ctrl-h/j/k/l` | Navigate panes |
-| `space space` | File finder |
-| `space f g` | Search in project |
-| `space g g` | Open lazygit |
-| `space g b` | Toggle git blame |
-| `space c a` | Code actions |
-| `space c r` | Rename symbol |
-| `space t t` | Toggle terminal |
-| `space a a` | Toggle AI agent |
 
 ## Ghostty Terminal
 
 Config lives in `.config/ghostty/config` and is symlinked to `~/.config/ghostty/config`.
 
 **Highlights:**
-- Font: JetBrains Mono Nerd Font, size 14
+- Font: JetBrains Mono Nerd Font, size 12
 - Theme: Catppuccin Mocha (matches Zed dark theme)
 - Left Option key → Meta/Alt (vim, readline word navigation)
 - Right Option key → still types Unicode (ø, å, ™, etc.)
