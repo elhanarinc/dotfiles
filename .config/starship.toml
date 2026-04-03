@@ -3,6 +3,9 @@
 # Catppuccin Mocha palette — matches Ghostty and Zed themes
 palette = "catppuccin_mocha"
 
+# Add a blank line before the prompt
+add_newline = true
+
 [palettes.catppuccin_mocha]
 rosewater = "#f5e0dc"
 flamingo  = "#f2cdcd"
@@ -23,9 +26,6 @@ subtext1  = "#bac2de"
 overlay2  = "#9399b2"
 surface1  = "#45475a"
 base      = "#1e1e2e"
-
-# Add a blank line before the prompt
-add_newline = true
 
 # Prompt format — order of modules
 format = """
@@ -117,6 +117,18 @@ not_capable_style = "bold red"
 format = "[$symbol$version]($style) "
 symbol = " "
 style = "bold peach"
+
+# =============================================================
+# GCP — disabled (service account too verbose)
+# =============================================================
+[gcloud]
+disabled = true
+
+# =============================================================
+# AWS — disabled (region not needed in prompt)
+# =============================================================
+[aws]
+disabled = true
 
 # =============================================================
 # Kubernetes — enabled (show active context)
