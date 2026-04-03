@@ -4,8 +4,8 @@
 
 # ─── Font ─────────────────────────────────────────────────────────────────────
 font-family = JetBrains Mono
-font-size = 14
-font-thicken = true
+font-size = 12
+font-thicken = false
 
 # ─── Theme ────────────────────────────────────────────────────────────────────
 # Run `ghostty +list-themes` to browse all built-in themes
