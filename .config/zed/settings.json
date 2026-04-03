@@ -1,23 +1,28 @@
 // Zed settings
 {
     // ─── Fonts ────────────────────────────────────────────────────────────────
+    "edit_predictions": {
+        "provider": "copilot",
+    },
     "agent_servers": {
         "opencode": {
             "favorite_models": [
                 "opencode/minimax-m2.5-free",
-                "opencode/qwen3.6-plus-free/medium"
+                "opencode/qwen3.6-plus-free/medium",
             ],
-            "type": "registry"
+            "type": "registry",
         },
         "codex-acp": {
-            "type": "registry"
+            "type": "registry",
         },
         "claude-acp": {
-            "type": "registry"
-        }
+            "type": "registry",
+        },
     },
-    "buffer_font_size": 13,
-    "ui_font_size": 13,
+    "buffer_font_size": 12,
+    "ui_font_size": 14,
+    "agent_buffer_font_size": 12,
+    "agent_ui_font_size": 14,
 
     // ─── Editor ───────────────────────────────────────────────────────────────
     "base_keymap": "VSCode",
@@ -93,7 +98,7 @@
         "shell": {
             "program": "/bin/zsh",
         },
-        "font_size": 15,
+        "font_size": 11,
         "working_directory": "current_project_directory",
         "option_as_meta": true,
         "env": {
