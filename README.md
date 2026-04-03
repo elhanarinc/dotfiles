@@ -40,7 +40,7 @@ Then restart your terminal.
 - gh (GitHub CLI), jq, yq, tmux, vim, lazygit
 
 ### Editors & Terminals
-- **Zed** — editor with LSP for Go/Python/TS/Ruby, Claude AI
+- **Zed** — editor with LSP for Go/Python/TS/Ruby
 - **Ghostty** — terminal with shell integration, Catppuccin Mocha theme, quick dropdown
 
 ### Fonts
@@ -69,14 +69,12 @@ Config lives in `.config/zed/` and is symlinked to `~/.config/zed/`. Three files
 
 | File | Purpose |
 |------|---------|
-| `settings.json` | Editor, LSP, terminal, AI (Claude), per-language overrides |
+| `settings.json` | Editor, LSP, terminal, per-language overrides |
 | `keymap.json` | Pane navigation, tmux passthrough |
 | `tasks.json` | `lazygit` task (run via task panel) |
 
 **First-time setup:**
 1. Install the theme: `cmd+shift+p` → "zed: extensions" → search **Catppuccin Themes**
-2. Set your Anthropic API key: agent panel → gear icon → paste key
-   (or add `ANTHROPIC_API_KEY` to `~/.zshrc.local`)
 
 **Key bindings:**
 
@@ -96,16 +94,16 @@ Config lives in `.config/ghostty/config` and is symlinked to `~/.config/ghostty/
 - Shell integration: semantic prompt marks, cursor changes at prompt
 - tmux compatible: auto-disables conflicting integration inside tmux sessions
 
-**Key bindings:**
+**Key bindings** (Ghostty built-in defaults):
 
 | Binding | Action |
 |---------|--------|
-| `cmd+\`` (global) | Toggle quick terminal (Quake-style dropdown) |
+| `cmd+\`` | Toggle quick terminal (Quake-style dropdown) |
 | `cmd+t` | New tab |
 | `cmd+d` | Split right |
 | `cmd+shift+d` | Split down |
 | `cmd+ctrl+h/j/k/l` | Navigate splits |
-| `shift+↑/↓` | Jump between shell prompts |
+| `shift+↑/↓` | Jump between shell prompts (requires shell integration) |
 | `cmd+shift+r` | Reload config |
 
 Run `ghostty +list-themes` to browse all built-in themes.
@@ -168,7 +166,7 @@ dotfiles/
 ├── .config/
 │   ├── starship.toml        # Starship prompt config
 │   ├── zed/
-│   │   ├── settings.json    # Zed editor settings (LSP, AI, terminal)
+│   │   ├── settings.json    # Zed editor settings (LSP, terminal, per-language)
 │   │   ├── keymap.json      # Zed keybindings (pane nav, tmux passthrough)
 │   │   └── tasks.json       # Zed tasks (lazygit)
 │   └── ghostty/

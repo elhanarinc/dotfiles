@@ -21,7 +21,8 @@
       "Bash(ln -sf /Users/appsamurai/Desktop/dotfiles/.bash_profile ~/.bash_profile)",
       "Bash(ln -sf /Users/appsamurai/Desktop/dotfiles/ssh/config ~/.ssh/config)",
       "WebFetch(domain:zed.dev)",
-      "WebFetch(domain:github.com)"
+      "WebFetch(domain:github.com)",
+      "mcp__claude_ai_Context7__resolve-library-id"
     ]
   }
 }
