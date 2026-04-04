@@ -1,10 +1,14 @@
 // Zed settings
 {
     // ─── Fonts ────────────────────────────────────────────────────────────────
+    "ui_font_weight": 400.0,
     "edit_predictions": {
         "provider": "copilot",
     },
     "agent_servers": {
+        "github-copilot-cli": {
+            "type": "registry"
+        },
         "opencode": {
             "favorite_models": [
                 "opencode/minimax-m2.5-free",
@@ -19,9 +23,9 @@
             "type": "registry",
         },
     },
-    "buffer_font_size": 12,
-    "ui_font_size": 14,
-    "agent_buffer_font_size": 12,
+    "buffer_font_size": 12.0,
+    "ui_font_size": 14.0,
+    "agent_buffer_font_size": 12.0,
     "agent_ui_font_size": 14,
 
     // ─── Editor ───────────────────────────────────────────────────────────────
@@ -208,8 +212,8 @@
     // ─── Agent ────────────────────────────────────────────────────────────────
     "agent": {
         "commit_message_model": {
-            "provider": "zed.dev",
-            "model": "claude-sonnet-4-5",
+            "provider": "opencode",
+            "model": "opencode/minimax-m2.5-free",
         },
     },
 
