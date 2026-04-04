@@ -212,8 +212,8 @@
     // ─── Agent ────────────────────────────────────────────────────────────────
     "agent": {
         "commit_message_model": {
-            "provider": "opencode",
-            "model": "opencode/minimax-m2.5-free",
+            "provider": "copilot_chat",
+            "model": "gpt-4o",
         },
     },
 
