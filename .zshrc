@@ -140,13 +140,6 @@ if command -v rg &>/dev/null; then
 fi
 
 # =============================================================
-# zoxide (smart cd)
-# =============================================================
-if command -v zoxide &>/dev/null; then
-  eval "$(zoxide init zsh --cmd cd)"
-fi
-
-# =============================================================
 # Aliases
 # =============================================================
 [ -f ~/.aliases ] && source ~/.aliases
@@ -158,8 +151,15 @@ fi
 [ -f ~/.zshrc.local ] && source ~/.zshrc.local
 
 # =============================================================
-# Starship prompt — must be last
+# Starship prompt
 # =============================================================
 if command -v starship &>/dev/null; then
   eval "$(starship init zsh)"
+fi
+
+# =============================================================
+# zoxide (smart cd) — must be last to avoid hook conflicts
+# =============================================================
+if command -v zoxide &>/dev/null; then
+  eval "$(zoxide init zsh --cmd cd)"
 fi
