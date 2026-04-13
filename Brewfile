@@ -44,7 +44,7 @@ brew "tree"             # Directory tree view
 brew "lazygit"          # Terminal UI for git (used in Zed tasks)
 
 # ============================================================
-# Formatters (used by Zed on save)
+# Formatters (used by VSCode on save)
 # ============================================================
 brew "prettier"         # JS/TS/JSON/YAML formatter
 # goimports: go install golang.org/x/tools/cmd/goimports@latest  (installed in install.sh)
@@ -90,8 +90,8 @@ cask "font-fira-code-nerd-font"
 # ============================================================
 # Editors & terminals
 # ============================================================
-cask "zed"              # Zed editor (config: .config/zed/)
-cask "ghostty"          # Ghostty terminal (config: .config/ghostty/)
+cask "visual-studio-code"  # VSCode editor (config: .config/Code/User/)
+cask "ghostty"             # Ghostty terminal (config: .config/ghostty/)
 
 # ============================================================
 # Java

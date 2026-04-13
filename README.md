@@ -40,7 +40,7 @@ Then restart your terminal.
 - gh (GitHub CLI), jq, yq, tmux, vim, lazygit
 
 ### Editors & Terminals
-- **Zed** — editor with LSP for Go/Python/TS/Ruby
+- **Visual Studio Code** — editor with extensions auto-installed from `.config/Code/extensions.txt`
 - **Ghostty** — terminal with shell integration, Catppuccin Mocha theme, quick dropdown
 
 ### Fonts
@@ -63,24 +63,30 @@ vim ~/.zshrc.local
 
 This file is sourced at the end of `.zshrc` and is gitignored.
 
-## Zed Editor
+## Visual Studio Code
 
-Config lives in `.config/zed/` and is symlinked to `~/.config/zed/`. Three files:
+Config lives in `.config/Code/` and is symlinked to VSCode's user directory:
+- macOS: `~/Library/Application Support/Code/User/`
+- Linux: `~/.config/Code/User/`
 
 | File | Purpose |
 |------|---------|
-| `settings.json` | Editor, LSP, terminal, per-language overrides |
-| `keymap.json` | Pane navigation, tmux passthrough |
-| `tasks.json` | `lazygit` task (run via task panel) |
+| `User/settings.json` | Editor, formatters, per-language overrides |
+| `User/mcp.json` | MCP server registrations (Context7, Chrome DevTools) |
+| `User/snippets/` | User code snippets (symlinked individually) |
+| `extensions.txt` | Extension list — auto-installed by `install.sh` via `code --install-extension` |
 
 **First-time setup:**
-1. Install the theme: `cmd+shift+p` → "zed: extensions" → search **Catppuccin Themes**
+1. Open VSCode → `Cmd+Shift+P` → run **Shell Command: Install 'code' command in PATH** so `install.sh` can install extensions automatically.
+2. Re-run `./install.sh` — it will symlink configs and install every extension listed in `.config/Code/extensions.txt`.
 
-**Key bindings:**
+**Updating the extension list** after installing/removing extensions:
 
-| Binding | Action |
-|---------|--------|
-| `ctrl-h/j/k/l` | Navigate panes |
+```bash
+code --list-extensions > .config/Code/extensions.txt
+```
+
+Commit the change so future machines stay in sync.
 
 ## Ghostty Terminal
 
@@ -165,10 +171,12 @@ dotfiles/
 ├── .tmux.conf               # Tmux configuration
 ├── .config/
 │   ├── starship.toml        # Starship prompt config
-│   ├── zed/
-│   │   ├── settings.json    # Zed editor settings (LSP, terminal, per-language)
-│   │   ├── keymap.json      # Zed keybindings (pane nav, tmux passthrough)
-│   │   └── tasks.json       # Zed tasks (lazygit)
+│   ├── Code/
+│   │   ├── extensions.txt   # VSCode extension list (auto-installed)
+│   │   └── User/
+│   │       ├── settings.json   # VSCode editor settings
+│   │       ├── mcp.json        # MCP server registrations
+│   │       └── snippets/       # User snippets
 │   └── ghostty/
 │       └── config           # Ghostty terminal config
 ├── .vim/

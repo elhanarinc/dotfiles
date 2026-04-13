@@ -219,7 +219,7 @@ install_nvm() {
 install_dev_formatters() {
   header "Dev Formatters"
 
-  # goimports (Go formatter for Zed)
+  # goimports (Go formatter for VSCode)
   if command_exists go; then
     if ! command_exists goimports; then
       info "Installing goimports..."
@@ -253,6 +253,36 @@ install_dev_formatters() {
       info "$tool already installed, skipping"
     fi
   done
+}
+
+# ============================================================
+# VSCode Extensions
+# ============================================================
+install_vscode_extensions() {
+  header "VSCode Extensions"
+  local ext_file="$DOTFILES_DIR/.config/Code/extensions.txt"
+  if [[ ! -f "$ext_file" ]]; then
+    info "No extensions.txt found, skipping"
+    return 0
+  fi
+  if ! command_exists code; then
+    warn "'code' CLI not found in PATH."
+    warn "Open VSCode → Cmd+Shift+P → 'Shell Command: Install code command in PATH', then re-run."
+    return 0
+  fi
+  local installed
+  installed="$(code --list-extensions 2>/dev/null || true)"
+  while IFS= read -r ext; do
+    [[ -z "$ext" || "$ext" =~ ^# ]] && continue
+    if echo "$installed" | grep -qix "$ext"; then
+      info "Extension already installed: $ext"
+    else
+      info "Installing extension: $ext"
+      code --install-extension "$ext" --force >/dev/null 2>&1 \
+        && success "Installed: $ext" \
+        || warn "Failed to install: $ext"
+    fi
+  done < "$ext_file"
 }
 
 # ============================================================
@@ -335,11 +365,26 @@ create_symlinks() {
   mkdir -p "$HOME/.config"
   backup_and_link "$DOTFILES_DIR/.config/starship.toml" "$HOME/.config/starship.toml"
 
-  # Zed editor config
-  mkdir -p "$HOME/.config/zed"
-  backup_and_link "$DOTFILES_DIR/.config/zed/settings.json" "$HOME/.config/zed/settings.json"
-  backup_and_link "$DOTFILES_DIR/.config/zed/keymap.json"   "$HOME/.config/zed/keymap.json"
-  backup_and_link "$DOTFILES_DIR/.config/zed/tasks.json"    "$HOME/.config/zed/tasks.json"
+  # VSCode editor config
+  local vscode_user_dir
+  if [[ "$OS" == "macos" ]]; then
+    vscode_user_dir="$HOME/Library/Application Support/Code/User"
+  else
+    vscode_user_dir="$HOME/.config/Code/User"
+  fi
+  mkdir -p "$vscode_user_dir/snippets"
+  backup_and_link "$DOTFILES_DIR/.config/Code/User/settings.json" "$vscode_user_dir/settings.json"
+  backup_and_link "$DOTFILES_DIR/.config/Code/User/mcp.json"      "$vscode_user_dir/mcp.json"
+  if [[ -f "$DOTFILES_DIR/.config/Code/User/keybindings.json" ]]; then
+    backup_and_link "$DOTFILES_DIR/.config/Code/User/keybindings.json" "$vscode_user_dir/keybindings.json"
+  fi
+  # Symlink each snippet file individually so VSCode picks them up
+  if [[ -d "$DOTFILES_DIR/.config/Code/User/snippets" ]]; then
+    for snippet in "$DOTFILES_DIR/.config/Code/User/snippets"/*; do
+      [[ -e "$snippet" ]] || continue
+      backup_and_link "$snippet" "$vscode_user_dir/snippets/$(basename "$snippet")"
+    done
+  fi
 
   # Ghostty terminal config
   mkdir -p "$HOME/.config/ghostty"
@@ -418,8 +463,8 @@ post_install_message() {
   echo "  3. Set your terminal font to a Nerd Font for icons:"
   echo "       Ghostty: font is pre-configured via .config/ghostty/config"
   echo "       Other terminals: set JetBrains Mono Nerd Font in preferences"
-  echo "  4. Install the Catppuccin theme in Zed:"
-  echo "       cmd+shift+p → 'zed: extensions' → search 'Catppuccin Themes'"
+  echo "  4. VSCode extensions are auto-installed from .config/Code/extensions.txt"
+  echo "       (requires 'code' CLI in PATH — install via Cmd+Shift+P in VSCode)"
   echo "  5. Inside tmux, run prefix+I to install tpm plugins (resurrect, continuum)"
   echo ""
   echo -e "${BOLD}Installed plugins (oh-my-zsh):${NC}"
@@ -469,6 +514,7 @@ main() {
   install_dev_formatters
   setup_fzf
   create_symlinks
+  install_vscode_extensions
   install_git_hooks
   setup_local_config
   post_install_message
