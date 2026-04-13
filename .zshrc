@@ -159,7 +159,10 @@ fi
 
 # =============================================================
 # zoxide (smart cd) — must be last to avoid hook conflicts
+# Disable doctor check: lazy-loaded nvm adds a chpwd hook on first use,
+# which triggers a false-positive "not initialized last" warning.
 # =============================================================
+export _ZO_DOCTOR=0
 if command -v zoxide &>/dev/null; then
   eval "$(zoxide init zsh --cmd cd)"
 fi
