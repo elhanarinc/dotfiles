@@ -13,3 +13,7 @@ export LSCOLORS=ExFxBxDxCxegedabagacad
 
 source ~/.aliases
 
+
+
+# Added by Antigravity CLI installer
+export PATH="/Users/appsamurai/.local/bin:$PATH"
