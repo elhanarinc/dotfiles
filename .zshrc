@@ -173,3 +173,8 @@ export PATH="/Users/appsamurai/.local/bin:$PATH"
 
 # kimi-code
 export PATH="/Users/appsamurai/.kimi-code/bin:$PATH"
+# The following lines have been added by Docker Desktop to enable Docker CLI completions.
+fpath=(/Users/appsamurai/.docker/completions $fpath)
+autoload -Uz compinit
+compinit
+# End of Docker CLI completions
