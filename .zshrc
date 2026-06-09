@@ -170,3 +170,6 @@ fi
 
 # Added by Antigravity CLI installer
 export PATH="/Users/appsamurai/.local/bin:$PATH"
+
+# kimi-code
+export PATH="/Users/appsamurai/.kimi-code/bin:$PATH"
