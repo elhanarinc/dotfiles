@@ -112,3 +112,5 @@ alias tfo='terraform output'
 alias timer='echo "Timer started. Stop with Ctrl-D." && date && time cat && date'
 alias mkcd='() { mkdir -p "$1" && cd "$1"; }'
 alias cl='clear'
+alias codex='codex --dangerously-bypass-approvals-and-sandbox'
+
