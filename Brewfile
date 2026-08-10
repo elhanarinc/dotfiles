@@ -42,6 +42,8 @@ brew "tmux"             # Terminal multiplexer
 brew "vim"              # Text editor
 brew "tree"             # Directory tree view
 brew "lazygit"          # Terminal UI for git (used in Zed tasks)
+brew "shellcheck"       # Shell script validation
+brew "uv"               # Fast Python package/tool manager
 
 # ============================================================
 # Formatters (used by VSCode on save)
@@ -80,6 +82,12 @@ brew "telnet"           # Network debugging
 # ============================================================
 brew "sqlite"           # Lightweight database
 brew "mysql-client"     # MySQL CLI (no server)
+brew "pandoc"           # Document conversion
+brew "poppler"          # PDF utilities
+brew "qpdf"             # PDF inspection and transformation
+brew "ffmpeg"           # Audio/video processing
+brew "imagemagick"      # Image processing
+brew "watchman"         # Filesystem watcher
 
 # ============================================================
 # Fonts (for starship / eza icons — set in terminal preferences)
@@ -92,6 +100,30 @@ cask "font-fira-code-nerd-font"
 # ============================================================
 cask "visual-studio-code"  # VSCode editor (config: .config/Code/User/)
 cask "ghostty"             # Ghostty terminal (config: .config/ghostty/)
+cask "iterm2"              # Terminal fallback
+
+# ============================================================
+# Workstation applications (configuration only; login manually)
+# ============================================================
+cask "docker"               # Docker Desktop
+cask "google-chrome"        # Browser
+cask "spotify"              # Music
+cask "slack"                # Team communication
+cask "obsidian"             # Knowledge base
+cask "postman"              # API client
+cask "lens"                 # Kubernetes desktop client
+cask "caffeine"             # Keep Mac awake
+cask "chatgpt"              # ChatGPT desktop
+cask "claude"               # Claude desktop
+
+# General-purpose utilities used on the current workstation
+cask "maccy"                # Clipboard manager
+cask "jordanbaird-ice"      # Menu bar manager
+cask "hiddenbar"            # Lightweight menu bar utility
+cask "tableplus"            # Database client
+cask "react-native-debugger"
+cask "android-platform-tools"
+cask "codex"                # Codex CLI
 
 # ============================================================
 # Java

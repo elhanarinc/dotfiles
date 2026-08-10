@@ -1,523 +1,76 @@
 #!/usr/bin/env bash
-# install.sh — Idempotent dotfiles bootstrap
-# Safe to run multiple times. Works on macOS and Linux.
-# Usage: ./install.sh
-
-set -euo pipefail
+set -uo pipefail
 
 DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-BACKUP_DIR="$HOME/.dotfiles_backup/$(date +%Y%m%d_%H%M%S)"
-NVM_VERSION="v0.40.1"
+export DOTFILES_DIR
+# shellcheck source=scripts/lib.sh
+source "$DOTFILES_DIR/scripts/lib.sh"
 
-# ============================================================
-# Colors & helpers
-# ============================================================
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-BOLD='\033[1m'
-NC='\033[0m'
+PHASES=(brew apps shell links vscode ai brain doctor)
+DRY_RUN=0
+ONLY=""
+SKIP=""
 
-info()    { echo -e "${BLUE}[INFO]${NC}  $*"; }
-success() { echo -e "${GREEN}[OK]${NC}    $*"; }
-warn()    { echo -e "${YELLOW}[WARN]${NC}  $*"; }
-error()   { echo -e "${RED}[ERROR]${NC} $*" >&2; }
-header()  { echo -e "\n${BOLD}${BLUE}==> $*${NC}"; }
-command_exists() { command -v "$1" &>/dev/null; }
+usage() {
+  cat <<'EOF'
+Usage: ./install.sh [--dry-run] [--only phase,...] [--skip phase,...] [--help]
 
-# ============================================================
-# OS detection
-# ============================================================
-detect_os() {
-  header "Detecting OS"
-  if [[ "$(uname)" == "Darwin" ]]; then
-    OS="macos"
-    ARCH="$(uname -m)"
-    if [[ "$ARCH" == "arm64" ]]; then
-      HOMEBREW_PREFIX="/opt/homebrew"
-    else
-      HOMEBREW_PREFIX="/usr/local"
-    fi
-    success "macOS detected (${ARCH}), Homebrew prefix: ${HOMEBREW_PREFIX}"
-  elif [[ "$(uname)" == "Linux" ]]; then
-    OS="linux"
-    HOMEBREW_PREFIX="/home/linuxbrew/.linuxbrew"
-    success "Linux detected"
-  else
-    error "Unsupported OS: $(uname)"
-    exit 1
-  fi
+Phases: brew, apps, shell, links, vscode, ai, brain, doctor
+
+  --dry-run       Print planned changes without changing the machine
+  --only LIST     Run only comma-separated phases
+  --skip LIST     Skip comma-separated phases
+EOF
 }
 
-# ============================================================
-# Homebrew (macOS only)
-# ============================================================
-install_homebrew() {
-  [[ "$OS" != "macos" ]] && return 0
-  header "Homebrew"
-  if command_exists brew; then
-    info "Homebrew already installed, skipping"
-    return 0
-  fi
-  info "Installing Homebrew..."
-  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-  eval "$($HOMEBREW_PREFIX/bin/brew shellenv)"
-  success "Homebrew installed"
+contains_csv() { [[ ",$1," == *",$2,"* ]]; }
+valid_phase() { local p; for p in "${PHASES[@]}"; do [[ "$p" == "$1" ]] && return 0; done; return 1; }
+validate_list() {
+  local list="$1" item old_ifs="$IFS"
+  IFS=,
+  for item in $list; do valid_phase "$item" || die "Unknown phase: $item (valid: ${PHASES[*]})"; done
+  IFS="$old_ifs"
 }
 
-# ============================================================
-# Brew packages (macOS only)
-# ============================================================
-install_brew_packages() {
-  [[ "$OS" != "macos" ]] && return 0
-  header "Homebrew Packages"
-  if [[ ! -f "$DOTFILES_DIR/Brewfile" ]]; then
-    warn "No Brewfile found, skipping"
-    return 0
-  fi
-  if ! command_exists brew; then
-    warn "brew not found, skipping package install"
-    return 0
-  fi
-  info "Installing packages from Brewfile (this may take a while)..."
-  brew bundle install --file="$DOTFILES_DIR/Brewfile" --no-upgrade || \
-    warn "Some packages had issues (likely already installed casks). Continuing..."
-  success "Brew packages installed"
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --dry-run) DRY_RUN=1 ;;
+    --only) [[ $# -ge 2 ]] || die "--only requires a value"; ONLY="$2"; shift ;;
+    --skip) [[ $# -ge 2 ]] || die "--skip requires a value"; SKIP="$2"; shift ;;
+    --help|-h) usage; exit 0 ;;
+    *) die "Unknown option: $1" ;;
+  esac
+  shift
+done
+[[ -n "$ONLY" ]] && validate_list "$ONLY"
+[[ -n "$SKIP" ]] && validate_list "$SKIP"
+export DRY_RUN
+detect_os
+
+run_phase() {
+  local phase="$1"
+  case "$phase" in
+    brew|apps) "$DOTFILES_DIR/scripts/install-brew.sh" "$phase" ;;
+    shell) "$DOTFILES_DIR/scripts/install-shell.sh" ;;
+    links) "$DOTFILES_DIR/scripts/link-dotfiles.sh" ;;
+    vscode) "$DOTFILES_DIR/scripts/install-dev-tools.sh" ;;
+    ai) "$DOTFILES_DIR/scripts/install-ai-tools.sh" ;;
+    brain) "$DOTFILES_DIR/scripts/install-brain.sh" ;;
+    doctor) "$DOTFILES_DIR/scripts/doctor.sh" ;;
+  esac
 }
 
-# ============================================================
-# Linux packages
-# ============================================================
-install_linux_packages() {
-  [[ "$OS" != "linux" ]] && return 0
-  header "Linux Packages"
-  if command_exists apt-get; then
-    info "Installing packages via apt..."
-    sudo apt-get update -qq
-    sudo apt-get install -y \
-      curl wget git vim tmux ripgrep jq zsh \
-      build-essential unzip tar
-    # bat (may be batcat on Ubuntu)
-    if ! command_exists bat && ! command_exists batcat; then
-      sudo apt-get install -y bat 2>/dev/null || true
-    fi
-    # eza (not in all apt repos)
-    if ! command_exists eza; then
-      if sudo apt-get install -y eza 2>/dev/null; then
-        true
-      else
-        warn "eza not available via apt, install manually: https://github.com/eza-community/eza"
-      fi
-    fi
-    # delta
-    if ! command_exists delta; then
-      local delta_deb
-      delta_deb=$(mktemp /tmp/delta-XXXXXX.deb)
-      curl -sL "https://github.com/dandavison/delta/releases/download/0.18.2/git-delta_0.18.2_amd64.deb" -o "$delta_deb"
-      sudo dpkg -i "$delta_deb" && rm -f "$delta_deb" || warn "Could not install delta"
-    fi
-    # zoxide
-    if ! command_exists zoxide; then
-      curl -sSfL https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | sh || warn "Could not install zoxide"
-    fi
-    # starship is installed separately
-  elif command_exists dnf; then
-    info "Installing packages via dnf..."
-    sudo dnf install -y curl wget git vim tmux jq zsh ripgrep
-  else
-    warn "Neither apt nor dnf found. Install packages manually."
-  fi
-  success "Linux packages installed"
-}
+info "dotfiles bootstrap ($OS/$ARCH)$([[ "$DRY_RUN" == 1 ]] && printf ' — DRY RUN')"
+failures=0
+for phase in "${PHASES[@]}"; do
+  [[ -n "$ONLY" ]] && ! contains_csv "$ONLY" "$phase" && continue
+  [[ -n "$SKIP" ]] && contains_csv "$SKIP" "$phase" && continue
+  header "$phase"
+  run_phase "$phase" || { error "phase failed: $phase"; failures=$((failures + 1)); }
+done
 
-# ============================================================
-# Oh-My-Zsh
-# ============================================================
-install_omz() {
-  header "Oh-My-Zsh"
-  if [[ -d "$HOME/.oh-my-zsh" ]]; then
-    info "Oh-My-Zsh already installed, skipping"
-    return 0
-  fi
-  info "Installing Oh-My-Zsh..."
-  # --unattended prevents OMZ from overwriting our .zshrc
-  RUNZSH=no CHSH=no sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
-  success "Oh-My-Zsh installed"
-}
-
-# ============================================================
-# Oh-My-Zsh plugins
-# ============================================================
-install_omz_plugins() {
-  header "Oh-My-Zsh Plugins"
-  local plugins_dir="${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/plugins"
-  mkdir -p "$plugins_dir"
-
-  local plugin_names=(
-    "zsh-autosuggestions"
-    "zsh-syntax-highlighting"
-    "fzf-tab"
-    "you-should-use"
-  )
-  local plugin_urls=(
-    "https://github.com/zsh-users/zsh-autosuggestions"
-    "https://github.com/zsh-users/zsh-syntax-highlighting"
-    "https://github.com/Aloxaf/fzf-tab"
-    "https://github.com/MichaelAquilina/zsh-you-should-use"
-  )
-
-  local i
-  for i in "${!plugin_names[@]}"; do
-    local plugin="${plugin_names[$i]}"
-    local url="${plugin_urls[$i]}"
-    if [[ -d "$plugins_dir/$plugin" ]]; then
-      info "Plugin '$plugin' already installed, skipping"
-    else
-      info "Installing plugin: $plugin"
-      git clone --depth=1 "$url" "$plugins_dir/$plugin"
-      success "Installed: $plugin"
-    fi
-  done
-}
-
-# ============================================================
-# Starship prompt
-# ============================================================
-install_starship() {
-  header "Starship Prompt"
-  if command_exists starship; then
-    info "Starship already installed, skipping"
-    return 0
-  fi
-  info "Installing Starship..."
-  if [[ "$OS" == "macos" ]] && command_exists brew; then
-    brew install starship
-  else
-    curl -sS https://starship.rs/install.sh | sh -s -- --yes
-  fi
-  success "Starship installed"
-}
-
-# ============================================================
-# NVM
-# ============================================================
-install_nvm() {
-  header "NVM (Node Version Manager)"
-  if [[ -d "$HOME/.nvm" ]]; then
-    info "NVM already installed, skipping"
-    return 0
-  fi
-  info "Installing NVM ${NVM_VERSION}..."
-  curl -o- "https://raw.githubusercontent.com/nvm-sh/nvm/${NVM_VERSION}/install.sh" | bash
-  success "NVM installed"
-}
-
-# ============================================================
-# Dev formatters (goimports, autopep8, black, isort, mypy)
-# ============================================================
-install_dev_formatters() {
-  header "Dev Formatters"
-
-  # goimports (Go formatter for VSCode)
-  if command_exists go; then
-    if ! command_exists goimports; then
-      info "Installing goimports..."
-      go install golang.org/x/tools/cmd/goimports@latest
-      success "goimports installed"
-    else
-      info "goimports already installed, skipping"
-    fi
-  else
-    warn "go not found, skipping goimports"
-  fi
-
-  # Python formatters (autopep8, black, isort, mypy)
-  local pip_cmd
-  if command_exists pip3; then
-    pip_cmd="pip3"
-  elif command_exists pip; then
-    pip_cmd="pip"
-  else
-    warn "pip not found, skipping Python formatters"
-    return 0
-  fi
-
-  local python_tools=(autopep8 black isort mypy)
-  for tool in "${python_tools[@]}"; do
-    if ! command_exists "$tool"; then
-      info "Installing $tool..."
-      "$pip_cmd" install --quiet --break-system-packages "$tool"
-      success "$tool installed"
-    else
-      info "$tool already installed, skipping"
-    fi
-  done
-}
-
-# ============================================================
-# VSCode Extensions
-# ============================================================
-install_vscode_extensions() {
-  header "VSCode Extensions"
-  local ext_file="$DOTFILES_DIR/.config/Code/extensions.txt"
-  if [[ ! -f "$ext_file" ]]; then
-    info "No extensions.txt found, skipping"
-    return 0
-  fi
-  if ! command_exists code; then
-    warn "'code' CLI not found in PATH."
-    warn "Open VSCode → Cmd+Shift+P → 'Shell Command: Install code command in PATH', then re-run."
-    return 0
-  fi
-  local installed
-  installed="$(code --list-extensions 2>/dev/null || true)"
-  while IFS= read -r ext; do
-    [[ -z "$ext" || "$ext" =~ ^# ]] && continue
-    if echo "$installed" | grep -qix "$ext"; then
-      info "Extension already installed: $ext"
-    else
-      info "Installing extension: $ext"
-      code --install-extension "$ext" --force >/dev/null 2>&1 \
-        && success "Installed: $ext" \
-        || warn "Failed to install: $ext"
-    fi
-  done < "$ext_file"
-}
-
-# ============================================================
-# Tmux Plugin Manager (tpm)
-# ============================================================
-install_tpm() {
-  header "Tmux Plugin Manager (tpm)"
-  local tpm_dir="$HOME/.tmux/plugins/tpm"
-  if [[ -d "$tpm_dir" ]]; then
-    info "tpm already installed, skipping"
-    return 0
-  fi
-  info "Installing tpm..."
-  git clone --depth=1 https://github.com/tmux-plugins/tpm "$tpm_dir"
-  success "tpm installed — run prefix+I inside tmux to install plugins"
-}
-
-# ============================================================
-# fzf shell integration (if installed via brew)
-# ============================================================
-setup_fzf() {
-  header "fzf Shell Integration"
-  if command_exists fzf; then
-    local fzf_prefix
-    if command_exists brew; then
-      fzf_prefix="$(brew --prefix fzf 2>/dev/null || echo '')"
-    fi
-    if [[ -n "${fzf_prefix:-}" ]] && [[ -f "$fzf_prefix/install" ]]; then
-      if [[ ! -f "$HOME/.fzf.zsh" ]]; then
-        info "Setting up fzf shell integration..."
-        "$fzf_prefix/install" --key-bindings --completion --no-update-rc
-        success "fzf shell integration configured"
-      else
-        info "fzf shell integration already configured, skipping"
-      fi
-    fi
-  else
-    info "fzf not found, skipping shell integration"
-  fi
-}
-
-# ============================================================
-# Symlinks
-# ============================================================
-backup_and_link() {
-  local src="$1"
-  local dst="$2"
-
-  # Skip if already correctly symlinked
-  if [[ -L "$dst" ]] && [[ "$(readlink "$dst")" == "$src" ]]; then
-    info "Already linked: $dst"
-    return 0
-  fi
-
-  # Backup if exists and is not our symlink
-  if [[ -e "$dst" ]] || [[ -L "$dst" ]]; then
-    mkdir -p "$BACKUP_DIR"
-    info "Backing up: $dst -> $BACKUP_DIR/"
-    mv "$dst" "$BACKUP_DIR/"
-  fi
-
-  # Create parent directory if needed
-  mkdir -p "$(dirname "$dst")"
-
-  ln -sf "$src" "$dst"
-  success "Linked: $dst"
-}
-
-create_symlinks() {
-  header "Creating Symlinks"
-
-  backup_and_link "$DOTFILES_DIR/.zshrc"              "$HOME/.zshrc"
-  backup_and_link "$DOTFILES_DIR/.aliases"            "$HOME/.aliases"
-  backup_and_link "$DOTFILES_DIR/.gitconfig"          "$HOME/.gitconfig"
-  backup_and_link "$DOTFILES_DIR/.vimrc"              "$HOME/.vimrc"
-  backup_and_link "$DOTFILES_DIR/.inputrc"            "$HOME/.inputrc"
-  backup_and_link "$DOTFILES_DIR/.tmux.conf"          "$HOME/.tmux.conf"
-
-  # Starship config
-  mkdir -p "$HOME/.config"
-  backup_and_link "$DOTFILES_DIR/.config/starship.toml" "$HOME/.config/starship.toml"
-
-  # VSCode editor config
-  local vscode_user_dir
-  if [[ "$OS" == "macos" ]]; then
-    vscode_user_dir="$HOME/Library/Application Support/Code/User"
-  else
-    vscode_user_dir="$HOME/.config/Code/User"
-  fi
-  mkdir -p "$vscode_user_dir/snippets"
-  backup_and_link "$DOTFILES_DIR/.config/Code/User/settings.json" "$vscode_user_dir/settings.json"
-  backup_and_link "$DOTFILES_DIR/.config/Code/User/mcp.json"      "$vscode_user_dir/mcp.json"
-  if [[ -f "$DOTFILES_DIR/.config/Code/User/keybindings.json" ]]; then
-    backup_and_link "$DOTFILES_DIR/.config/Code/User/keybindings.json" "$vscode_user_dir/keybindings.json"
-  fi
-  # Symlink each snippet file individually so VSCode picks them up
-  if [[ -d "$DOTFILES_DIR/.config/Code/User/snippets" ]]; then
-    for snippet in "$DOTFILES_DIR/.config/Code/User/snippets"/*; do
-      [[ -e "$snippet" ]] || continue
-      backup_and_link "$snippet" "$vscode_user_dir/snippets/$(basename "$snippet")"
-    done
-  fi
-
-  # Ghostty terminal config
-  mkdir -p "$HOME/.config/ghostty"
-  backup_and_link "$DOTFILES_DIR/.config/ghostty/config" "$HOME/.config/ghostty/config"
-
-  # Vim colors directory
-  mkdir -p "$HOME/.vim"
-  backup_and_link "$DOTFILES_DIR/.vim/colors"         "$HOME/.vim/colors"
-
-  # Bash profile
-  backup_and_link "$DOTFILES_DIR/.bash_profile"       "$HOME/.bash_profile"
-
-  # SSH config
-  mkdir -p "$HOME/.ssh"
-  chmod 700 "$HOME/.ssh"
-  backup_and_link "$DOTFILES_DIR/ssh/config"          "$HOME/.ssh/config"
-  chmod 600 "$DOTFILES_DIR/ssh/config"
-
-  success "All symlinks created"
-}
-
-# ============================================================
-# Git hooks (for dotfiles repo itself)
-# ============================================================
-install_git_hooks() {
-  header "Git Hooks"
-  local hooks_src="$DOTFILES_DIR/git-hooks"
-  local hooks_dst="$DOTFILES_DIR/.git/hooks"
-  if [[ ! -d "$hooks_src" ]]; then
-    info "No git-hooks directory found, skipping"
-    return 0
-  fi
-  for hook in "$hooks_src"/*; do
-    local hook_name
-    hook_name="$(basename "$hook")"
-    if [[ -L "$hooks_dst/$hook_name" ]] && [[ "$(readlink "$hooks_dst/$hook_name")" == "$hook" ]]; then
-      info "Hook '$hook_name' already installed, skipping"
-    else
-      ln -sf "$hook" "$hooks_dst/$hook_name"
-      chmod +x "$hook"
-      success "Installed hook: $hook_name"
-    fi
-  done
-}
-
-# ============================================================
-# Local config
-# ============================================================
-setup_local_config() {
-  header "Local Config (~/.zshrc.local)"
-  if [[ -f "$HOME/.zshrc.local" ]]; then
-    info "~/.zshrc.local already exists, skipping"
-    return 0
-  fi
-  info "Creating ~/.zshrc.local from example template..."
-  cp "$DOTFILES_DIR/.zshrc.local.example" "$HOME/.zshrc.local"
-  warn "IMPORTANT: Edit ~/.zshrc.local to add your machine-specific config!"
-  warn "           Move GEMINI_API_KEY and other secrets there."
-}
-
-# ============================================================
-# Post-install message
-# ============================================================
-post_install_message() {
-  echo ""
-  echo -e "${BOLD}${GREEN}============================================${NC}"
-  echo -e "${BOLD}${GREEN}  Dotfiles installation complete!${NC}"
-  echo -e "${BOLD}${GREEN}============================================${NC}"
-  echo ""
-  echo -e "${BOLD}Next steps:${NC}"
-  echo "  1. Restart your terminal (or run: exec zsh)"
-  echo "  2. Edit ~/.zshrc.local with your machine-specific config:"
-  echo "       - Add GEMINI_API_KEY and other API keys"
-  echo "       - Add Google Cloud SDK paths"
-  echo "       - Add Windsurf/Antigravity/OpenCode paths"
-  echo "  3. Set your terminal font to a Nerd Font for icons:"
-  echo "       Ghostty: font is pre-configured via .config/ghostty/config"
-  echo "       Other terminals: set JetBrains Mono Nerd Font in preferences"
-  echo "  4. VSCode extensions are auto-installed from .config/Code/extensions.txt"
-  echo "       (requires 'code' CLI in PATH — install via Cmd+Shift+P in VSCode)"
-  echo "  5. Inside tmux, run prefix+I to install tpm plugins (resurrect, continuum)"
-  echo ""
-  echo -e "${BOLD}Installed plugins (oh-my-zsh):${NC}"
-  echo "  - zsh-autosuggestions   (fish-like suggestions)"
-  echo "  - zsh-syntax-highlighting (command coloring)"
-  echo "  - fzf-tab               (fuzzy tab completion)"
-  echo "  - you-should-use        (alias reminders)"
-  echo "  - kubectl               (k8s completion)"
-  echo ""
-  echo -e "${BOLD}New tools to try:${NC}"
-  echo "  ls    → eza (with icons and git status)"
-  echo "  cat   → bat (syntax highlighting)"
-  echo "  cd    → zoxide (smart frecency navigation: 'cd project')"
-  echo "  grep  → rg  (ripgrep, much faster)"
-  echo "  git diff → delta pager (side-by-side diffs)"
-  echo ""
-  if [[ -f "$HOME/.gitconfig" ]]; then
-    warn "Security: Move any API keys from your old .zshrc to ~/.zshrc.local"
-  fi
-  echo ""
-}
-
-# ============================================================
-# Main
-# ============================================================
-main() {
-  echo -e "${BOLD}${BLUE}"
-  echo "  ██████╗  ██████╗ ████████╗███████╗██╗██╗     ███████╗███████╗"
-  echo "  ██╔══██╗██╔═══██╗╚══██╔══╝██╔════╝██║██║     ██╔════╝██╔════╝"
-  echo "  ██║  ██║██║   ██║   ██║   █████╗  ██║██║     █████╗  ███████╗"
-  echo "  ██║  ██║██║   ██║   ██║   ██╔══╝  ██║██║     ██╔══╝  ╚════██║"
-  echo "  ██████╔╝╚██████╔╝   ██║   ██║     ██║███████╗███████╗███████║"
-  echo "  ╚═════╝  ╚═════╝    ╚═╝   ╚═╝     ╚═╝╚══════╝╚══════╝╚══════╝"
-  echo -e "${NC}"
-  echo "  Dotfiles installer — safe to run multiple times"
-  echo ""
-
-  detect_os
-  install_homebrew
-  install_brew_packages
-  install_linux_packages
-  install_omz
-  install_omz_plugins
-  install_starship
-  install_nvm
-  install_tpm
-  install_dev_formatters
-  setup_fzf
-  create_symlinks
-  install_vscode_extensions
-  install_git_hooks
-  setup_local_config
-  post_install_message
-}
-
-main "$@"
+if [[ $failures -gt 0 ]]; then
+  error "$failures required phase(s) failed"
+  exit 1
+fi
+success "$([[ "$DRY_RUN" == 1 ]] && printf 'dry-run' || printf 'installation') completed"

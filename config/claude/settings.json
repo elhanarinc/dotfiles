@@ -1,0 +1,24 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$HOME/Obsidian/brain/bin/brief.mjs\" --cwd \"$PWD\""
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$HOME/Obsidian/brain/bin/capture.mjs\" --cwd \"$PWD\" --source claude"
+          }
+        ]
+      }
+    ]
+  }
+}

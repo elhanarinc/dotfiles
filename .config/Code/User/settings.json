@@ -1,5 +1,5 @@
 {
-  "python.defaultInterpreterPath": "/Users/appsamurai/.pyenv/versions/3.11.0/bin/python",
+  "python.defaultInterpreterPath": "python3",
   "explorer.confirmDelete": false,
   "explorer.confirmDragAndDrop": false,
   "security.workspace.trust.untrustedFiles": "open",
@@ -17,6 +17,7 @@
     "tr": true
   },
   "git.confirmSync": false,
+  "git.ignoreRebaseWarning": true,
   "editor.detectIndentation": false,
   "window.newWindowProfile": "Default",
   "workbench.colorTheme": "Monokai",
@@ -78,7 +79,7 @@
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
   "claudeCode.preferredLocation": "sidebar",
-"claudeCode.useTerminal": true,
-"chat.mcp.gallery.enabled": true,
-"github.copilot.chat.agentDebugLog.enabled": true,
+  "claudeCode.useTerminal": true,
+  "chat.mcp.gallery.enabled": true,
+  "github.copilot.chat.agentDebugLog.enabled": true
 }

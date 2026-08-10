@@ -1,0 +1,5 @@
+# Portable defaults only. Authentication and project trust remain local.
+model_reasoning_effort = "high"
+
+[features]
+shell_snapshot = true

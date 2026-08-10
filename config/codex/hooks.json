@@ -1,0 +1,5 @@
+{
+  "SessionStart": "node \"$HOME/Obsidian/brain/bin/brief.mjs\" --cwd \"$PWD\"",
+  "SessionEnd": "node \"$HOME/Obsidian/brain/bin/capture.mjs\" --cwd \"$PWD\" --source codex",
+  "PostToolUse": "node \"$HOME/Obsidian/brain/bin/reindex.mjs\" --quiet"
+}

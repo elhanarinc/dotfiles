@@ -1,0 +1,7 @@
+[user]
+    name = Your Name
+    email = you@example.com
+
+# Optional account-specific settings belong here, never in .gitconfig.
+# [github]
+#     user = your-handle

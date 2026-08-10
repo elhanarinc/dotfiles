@@ -14,7 +14,7 @@
 # export NPM_TOKEN="your-npm-token"
 
 # ============================================================
-# Work / org-specific config
+# Optional organization-specific config
 # ============================================================
 # export GOPRIVATE="github.com/your-org/*"
 # export GOPROXY="direct"
@@ -37,13 +37,13 @@
 # ============================================================
 
 # Windsurf / Codeium
-# export PATH="/Users/$USER/.codeium/windsurf/bin:$PATH"
+# export PATH="$HOME/.codeium/windsurf/bin:$PATH"
 
 # Antigravity
-# export PATH="/Users/$USER/.antigravity/antigravity/bin:$PATH"
+# export PATH="$HOME/.antigravity/antigravity/bin:$PATH"
 
 # OpenCode
-# export PATH="/Users/$USER/.opencode/bin:$PATH"
+# export PATH="$HOME/.opencode/bin:$PATH"
 
 # JetBrains Toolbox scripts
 # export PATH="$HOME/Library/Application Support/JetBrains/Toolbox/scripts:$PATH"

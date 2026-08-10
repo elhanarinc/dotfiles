@@ -1,9 +1,5 @@
-[user]
-    name = Arinc Elhan
-    email = elhanarinc@gmail.com
-
-[github]
-    user = elhanarinc
+[include]
+    path = ~/.gitconfig.local
 
 [init]
     defaultBranch = master

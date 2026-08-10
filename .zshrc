@@ -169,12 +169,12 @@ fi
 
 
 # Added by Antigravity CLI installer
-export PATH="/Users/appsamurai/.local/bin:$PATH"
+export PATH="$HOME/.local/bin:$PATH"
 
 # kimi-code
-export PATH="/Users/appsamurai/.kimi-code/bin:$PATH"
+export PATH="$HOME/.kimi-code/bin:$PATH"
 # The following lines have been added by Docker Desktop to enable Docker CLI completions.
-fpath=(/Users/appsamurai/.docker/completions $fpath)
+fpath=("$HOME/.docker/completions" $fpath)
 autoload -Uz compinit
 compinit
 # End of Docker CLI completions
