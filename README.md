@@ -1,187 +1,109 @@
 # dotfiles
 
-Personal dotfiles for macOS and Linux. One command to set up a new machine.
+Public, idempotent workstation bootstrap for a general-purpose Apple Silicon Mac. It installs shell and developer tooling, desktop applications, Claude Code, Codex, and an empty Obsidian living brain. Credentials, account state, Git identity, company configuration, project history, and existing Obsidian data are deliberately excluded.
 
-## Quick Start
+## Quick start
+
+Inspect first on an existing machine:
 
 ```bash
-git clone https://github.com/elhanarinc/dotfiles.git ~/Desktop/dotfiles
-cd ~/Desktop/dotfiles
+git clone https://github.com/elhanarinc/dotfiles.git ~/dotfiles
+cd ~/dotfiles
+./install.sh --dry-run
+```
+
+On a new Mac, after reviewing the plan:
+
+```bash
 ./install.sh
 ```
 
-Then restart your terminal.
-
-## What Gets Installed
-
-### Shell
-- **Oh-My-Zsh** with plugins:
-  - `zsh-autosuggestions` — fish-like command suggestions
-  - `zsh-syntax-highlighting` — real-time command coloring
-  - `fzf-tab` — fuzzy tab completion for everything
-  - `you-should-use` — reminds you when you have an alias
-  - `kubectl` — kubernetes completion (`k` alias)
-- **Starship** prompt — fast, cross-platform, context-aware
-
-### Modern CLI tools (via Brewfile on macOS)
-| Tool | Replaces | What it does |
-|------|----------|--------------|
-| `eza` | `ls` | File listing with icons and git status |
-| `bat` | `cat` | Syntax-highlighted file viewing |
-| `zoxide` | `cd` | Smart directory jumping by frecency |
-| `ripgrep` (rg) | `grep` | Fast recursive search |
-| `delta` | diff pager | Side-by-side git diffs |
-| `fzf` | — | Fuzzy finder for files, history, processes |
-| `starship` | shell prompt | Fast, informative, cross-platform prompt |
-
-### Dev tools
-- Go, Python (pyenv), Node (nvm), Ruby
-- kubectl, helm, eksctl, terraform, awscli
-- gh (GitHub CLI), jq, yq, tmux, vim, lazygit
-
-### Editors & Terminals
-- **Visual Studio Code** — editor with extensions auto-installed from `.config/Code/extensions.txt`
-- **Ghostty** — terminal with shell integration, Catppuccin Mocha theme, quick dropdown
-
-### Fonts
-- JetBrains Mono Nerd Font _(set this in your terminal preferences for icons)_
-- Fira Code Nerd Font
-
-## Machine-Specific Config (`~/.zshrc.local`)
-
-Some config is machine-specific and should **never** be committed to git:
-
-- API keys (`GEMINI_API_KEY`, `OPENAI_API_KEY`, etc.)
-- Work org settings (`GOPRIVATE`)
-- Tool paths specific to this machine (Google Cloud SDK, Windsurf, OpenCode)
-
-The install script creates `~/.zshrc.local` from `.zshrc.local.example`. Edit it:
+Supported controls:
 
 ```bash
-vim ~/.zshrc.local
+./install.sh --dry-run
+./install.sh --only brew,shell,links
+./install.sh --skip apps,brain
+./install.sh --help
 ```
 
-This file is sourced at the end of `.zshrc` and is gitignored.
+macOS arm64 is the primary supported platform. Linux shell setup remains best-effort; macOS applications are skipped there.
 
-## Visual Studio Code
+## What it manages
 
-Config lives in `.config/Code/` and is symlinked to VSCode's user directory:
-- macOS: `~/Library/Application Support/Code/User/`
-- Linux: `~/.config/Code/User/`
+- Homebrew and CLI tools: Git/GitHub CLI, modern shell tools, tmux, Vim, Go, Node, Python/pyenv/uv, Ruby, Java 17, AWS CLI, kubectl, Helm, Terraform, media/document utilities, and formatters.
+- Applications: Docker Desktop, VS Code, Ghostty, Chrome, Spotify, Slack, Obsidian, Postman, Lens, Caffeine, ChatGPT, Claude, iTerm2, and general desktop utilities.
+- Shell: Oh My Zsh, autosuggestions, syntax highlighting, fzf-tab, you-should-use, Starship, NVM, TPM, and fzf integration.
+- Allowlisted dotfile links with timestamped backups under `~/.dotfiles_backup/`.
+- VS Code settings, MCP template, snippets, and extensions.
+- Portable Claude/Codex defaults and living-brain hooks without authentication or trust state.
+- A new, empty brain at `~/Obsidian/brain`; existing brain content is always preserved.
 
-| File | Purpose |
-|------|---------|
-| `User/settings.json` | Editor, formatters, per-language overrides |
-| `User/mcp.json` | MCP server registrations (Context7, Chrome DevTools) |
-| `User/snippets/` | User code snippets (symlinked individually) |
-| `extensions.txt` | Extension list — auto-installed by `install.sh` via `code --install-extension` |
+The installer never runs `brew bundle cleanup` and does not remove software or user data.
 
-**First-time setup:**
-1. Open VSCode → `Cmd+Shift+P` → run **Shell Command: Install 'code' command in PATH** so `install.sh` can install extensions automatically.
-2. Re-run `./install.sh` — it will symlink configs and install every extension listed in `.config/Code/extensions.txt`.
+## Local-only configuration
 
-**Updating the extension list** after installing/removing extensions:
+The installer creates these files only when missing and never overwrites them:
+
+- `~/.zshrc.local` from `.zshrc.local.example`: API keys, organization settings, and machine paths.
+- `~/.gitconfig.local` from `.gitconfig.local.example`: name, email, signing keys, GitHub handle, and account-specific rewrites.
+
+Claude/Codex login state, transcripts, caches, project trust, device state, cloud credentials, and application logins are not tracked. Authenticate manually after installation.
+
+## Living brain
+
+The brain template contains scripts and empty folders, not this machine's notes. Register any repository after installation:
 
 ```bash
-code --list-extensions > .config/Code/extensions.txt
+node "$HOME/Obsidian/brain/bin/register-project.mjs" "$PWD"
 ```
 
-Commit the change so future machines stay in sync.
+Agent hooks then load the matching workspace note at session start, capture a durable session marker at session end, and refresh the workspace index. Add useful decisions/current state/next steps to the workspace Markdown; do not store secrets or raw transcripts.
 
-## Ghostty Terminal
+Codex may require one interactive trust confirmation before local hooks run. The repository intentionally does not copy or fabricate machine-specific trust hashes.
 
-Config lives in `.config/ghostty/config` and is symlinked to `~/.config/ghostty/config`.
+## Verification and maintenance
 
-**Highlights:**
-- Font: JetBrains Mono Nerd Font, size 12
-- Theme: Catppuccin Mocha (matches Zed dark theme)
-- Left Option key → Meta/Alt (vim, readline word navigation)
-- Right Option key → still types Unicode (ø, å, ™, etc.)
-- Shell integration: semantic prompt marks, cursor changes at prompt
-- tmux compatible: auto-disables conflicting integration inside tmux sessions
-
-**Key bindings** (Ghostty built-in defaults):
-
-| Binding | Action |
-|---------|--------|
-| `cmd+\`` | Toggle quick terminal (Quake-style dropdown) |
-| `cmd+t` | New tab |
-| `cmd+d` | Split right |
-| `cmd+shift+d` | Split down |
-| `cmd+ctrl+h/j/k/l` | Navigate splits |
-| `shift+↑/↓` | Jump between shell prompts (requires shell integration) |
-| `cmd+shift+r` | Reload config |
-
-Run `ghostty +list-themes` to browse all built-in themes.
-
-## Font Setup
-
-Starship and `eza` use icons that require a Nerd Font. After installation:
-
-1. The JetBrains Mono Nerd Font is installed via Brewfile
-2. Ghostty font is **pre-configured** via `.config/ghostty/config`
-3. Other terminals: **Preferences → Font → JetBrains Mono Nerd Font**
-   - iTerm2: `Preferences → Profiles → Text → Font`
-   - Terminal.app: `Preferences → Profiles → Font`
-
-## Tmux Key Bindings
-
-Prefix is `Ctrl+a` (not the default `Ctrl+b`).
-
-| Binding | Action |
-|---------|--------|
-| `prefix \|` | Split pane horizontally |
-| `prefix -` | Split pane vertically |
-| `prefix h/j/k/l` | Navigate panes (vim-style) |
-| `prefix H/J/K/L` | Resize panes |
-| `prefix r` | Reload tmux config |
-| `prefix [` then `v` | Start vi copy selection |
-| `prefix [` then `y` | Copy selection |
-
-### Tmux Plugin Manager (tpm)
-
-tpm is installed automatically by `install.sh`. Plugins: `tmux-sensible`, `tmux-resurrect` (session persistence), `tmux-continuum` (auto-save every 15 min).
-
-| Command | Action |
-|---------|--------|
-| `prefix+I` | Install plugins |
-| `prefix+U` | Update plugins |
-| `prefix+alt+u` | Remove unused plugins |
-
-## Staying Up to Date
+Read-only checks:
 
 ```bash
-cd ~/Desktop/dotfiles
-git pull
-./install.sh   # safe to re-run — idempotent
+./scripts/audit-public.sh
+./scripts/inventory.sh
+./scripts/doctor.sh
+brew bundle check --file=Brewfile
 ```
 
-## Repo Structure
+Repository tests operate in temporary homes:
 
+```bash
+bash tests/run.sh
 ```
-dotfiles/
-├── .zshrc                   # Main shell config
-├── .zshrc.local.example     # Template for machine-specific config (API keys, paths)
-├── .bash_profile            # Bash fallback (sources .zshrc on macOS login shells)
-├── .aliases                 # Shell aliases
-├── .gitconfig               # Git configuration
-├── .gitignore               # Repo gitignore
-├── .vimrc                   # Vim configuration
-├── .inputrc                 # Readline config (history search, vi-mode keybindings)
-├── .tmux.conf               # Tmux configuration
-├── .config/
-│   ├── starship.toml        # Starship prompt config
-│   ├── Code/
-│   │   ├── extensions.txt   # VSCode extension list (auto-installed)
-│   │   └── User/
-│   │       ├── settings.json   # VSCode editor settings
-│   │       ├── mcp.json        # MCP server registrations
-│   │       └── snippets/       # User snippets
-│   └── ghostty/
-│       └── config           # Ghostty terminal config
-├── .vim/
-│   └── colors/              # Vim colorschemes
-├── Brewfile                 # macOS package list
-├── install.sh               # Idempotent bootstrap script
-└── README.md                # This file
+
+Before re-running on a customized existing Mac, use `./install.sh --dry-run`. Conflicting managed files are backed up before linking; local-only files and an existing brain are preserved.
+
+## Post-install checklist
+
+1. Edit `~/.gitconfig.local` and `~/.zshrc.local`.
+2. Sign in to GitHub, cloud CLIs, Docker, Slack, Spotify, Claude, Codex, VS Code, and other applications as needed.
+3. Open VS Code and install the `code` shell command if it is not already available, then run `./install.sh --only vscode`.
+4. In tmux, press `prefix + I` to install plugins.
+5. Register repositories that should participate in the living brain.
+6. Run `./scripts/doctor.sh` and resolve remaining warnings.
+
+## Repository layout
+
+```text
+install.sh                 phase orchestrator
+Brewfile                   Homebrew formulae and casks
+scripts/                   install phases, audit, inventory, doctor
+config/claude/             portable Claude settings
+config/codex/              portable Codex settings and agent contract
+brain-template/            data-free living-brain software/template
+.config/                   VS Code, Ghostty, and Starship settings
+tests/                     temporary-HOME behavior tests
+AGENTS.md / CLAUDE.md      repository contribution rules
 ```
+
+## Public-repository rule
+
+Only reusable configuration belongs here. Run `scripts/audit-public.sh` before every push. Never commit credentials, real local override files, authentication data, project/company details, user-specific absolute paths, or Obsidian content.

@@ -14,5 +14,6 @@ check 'hard-coded macOS user path' '/Users/[A-Za-z0-9._-]+'
 check 'private key material' 'BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY'
 check 'credential assignment' '(api[_-]?key|access[_-]?token|client[_-]?secret|password)[[:space:]]*[:=][[:space:]]*"[A-Za-z0-9]'
 check 'company-specific content' '(appsamurai|storyly|netvent)'
+check 'unsafe Codex default' 'alias[[:space:]]+codex=.*dangerously-bypass-approvals-and-sandbox'
 if [[ $failed -ne 0 ]]; then exit 1; fi
 printf '[OK] tracked files passed public-safety audit\n'

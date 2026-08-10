@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -uo pipefail
-source "${DOTFILES_DIR:?}/scripts/lib.sh"
+DOTFILES_DIR="${DOTFILES_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
+source "$DOTFILES_DIR/scripts/lib.sh"
 detect_os
 
 link_file "$DOTFILES_DIR/.zshrc" "$HOME/.zshrc"

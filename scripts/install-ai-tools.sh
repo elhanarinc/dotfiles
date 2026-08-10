@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -uo pipefail
-source "${DOTFILES_DIR:?}/scripts/lib.sh"
+DOTFILES_DIR="${DOTFILES_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
+source "$DOTFILES_DIR/scripts/lib.sh"
 if ! command_exists claude; then
   if [[ "${DRY_RUN:-0}" == 1 ]]; then info "would install Claude Code using the official native installer"; else curl -fsSL https://claude.ai/install.sh | bash; fi
 fi

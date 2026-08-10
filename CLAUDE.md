@@ -1,19 +1,9 @@
-# dotfiles
+# dotfiles agent instructions
 
-## Commit Messages
+Follow [AGENTS.md](AGENTS.md) for scope, safety, validation, and commit rules.
 
-Always use Conventional Commits format:
+Use Conventional Commits and keep descriptions lowercase with no trailing period. This is a public repository: never copy Claude authentication, history, project memory, plugin caches, marketplace state, permissions tied to local paths, or employer-specific configuration.
 
-```
-<type>(<scope>): <description>
-```
+While changing the installer on an existing configured Mac, run only `./install.sh --dry-run`. Exercise mutations in a temporary `HOME`; preserve current configuration and existing Obsidian content.
 
-Types: `feat`, `fix`, `chore`, `docs`, `style`, `refactor`, `perf`, `test`
-
-Examples:
-- `feat(zsh): add fzf keybindings`
-- `fix(ssh): remove deprecated UseKeychain option`
-- `chore(brew): update Brewfile`
-- `style(starship): adjust prompt colors`
-
-Keep descriptions lowercase, no trailing period.
+Claude's portable settings live in `config/claude/settings.json`. The installed living brain is local data and must not be imported into the repository.
