@@ -13,7 +13,7 @@ Brewfile.lock.json
 .codex/history*
 .codex/log/
 .dotfiles_backup/
-brain/index.json
-brain/workspaces/*
-!brain/workspaces/.gitkeep
+brain-template/bin/state/config.json
+brain-template/bin/state/inbox/*
+!brain-template/bin/state/inbox/.gitkeep
 *.log

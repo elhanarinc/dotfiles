@@ -5,7 +5,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$HOME/Obsidian/brain/bin/brief.mjs\" --cwd \"$PWD\"",
+            "command": "/opt/homebrew/bin/node \"$HOME/Obsidian/brain/bin/scripts/codex-brief.mjs\"",
             "timeout": 5
           }
         ]
@@ -16,7 +16,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$HOME/Obsidian/brain/bin/capture.mjs\" --cwd \"$PWD\" --source codex",
+            "command": "/opt/homebrew/bin/node \"$HOME/Obsidian/brain/bin/scripts/codex-capture.mjs\"",
             "timeout": 10
           }
         ]
@@ -28,7 +28,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$HOME/Obsidian/brain/bin/reindex.mjs\" --quiet",
+            "command": "/opt/homebrew/bin/node \"$HOME/Obsidian/brain/bin/scripts/codex-reindex-hook.mjs\"",
             "timeout": 5
           }
         ]

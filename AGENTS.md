@@ -31,4 +31,11 @@ Use Conventional Commits: `<type>(<scope>): <lowercase description>`. Common typ
 
 ## Living brain
 
-AI configuration may wire generic hooks to `~/Obsidian/brain`, but this repository contains only the empty template and portable scripts. Registration paths live in the installed brain's local `config.json`, never in this repository.
+AI configuration may wire generic hooks to `~/Obsidian/brain`, but this repository contains only the empty template and portable scripts. Workspace names and roots live in the installed brain's local `bin/state/config.json`, never in this repository.
+
+The `*.mjs` files under `brain-template/bin/scripts/` are the *real* scripts, kept byte-identical to the installed brain so code cannot drift. After changing them on a machine, run `scripts/sync-brain-template.sh` and re-run `tests/brain_test.sh` and `scripts/audit-public.sh`.
+
+Two deliberate exceptions to that parity, both code-only:
+
+- `verify.mjs` is not vendored at all — it asserts against one machine's workspace names, symlink count and fixtures.
+- `brain-template/bin/docs/README.md` is a separate, portable setup manual, not a copy of the installed brain's own README. The sync script does not touch it; update it by hand when behaviour changes.
