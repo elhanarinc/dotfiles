@@ -61,7 +61,7 @@ Claude (`~/.claude/settings.json`):
 | Event | Script | What it does |
 |---|---|---|
 | `SessionStart` | `bin/scripts/brief.mjs` | Prints the workspace's open tasks and the last unprocessed inbox capture. |
-| `SessionEnd` | `bin/scripts/capture.mjs` | Writes the session's prompts + touched files to `bin/state/inbox/<workspace>/`. |
+| `SessionEnd` | `bin/scripts/capture.mjs` | Writes the session's prompts, touched files and ops commands to `bin/state/inbox/<workspace>/`. |
 | `PostToolUse` (`Write\|Edit`) | `bin/scripts/reindex-hook.mjs` | Regenerates the leaf `MEMORY.md` whenever a note is written. |
 
 Codex (`~/.codex/hooks.json`, contract in `~/.codex/AGENTS.md`) uses the same vault through
@@ -74,6 +74,30 @@ Hooks are global and fire in every directory on the machine. Each one maps `cwd`
 `SessionStart` stdout goes straight into the context window (**10,000 character limit**);
 `brief.mjs` truncates at 8,000 and deliberately does not repeat `MEMORY.md`, which the harness
 already loads.
+
+## What an inbox capture records
+
+`topic` (first prompt) · `touched` (files written through Write/Edit/apply_patch) · `ops`
+(state-changing shell commands) · `notes` (brain notes written). All four are surfaced by the
+next session's brief.
+
+`ops` exists because file paths alone under-report the work. A DNS cutover, an IAM change, a
+deploy or a PR runs entirely through the shell and touches no file — such a session used to be
+recorded with an empty `touched` and read as "nothing happened".
+
+The rule is `opsFromCommand` in `lib.mjs`, and it is an **allowlist**: `aws` mutating verbs,
+the state-changing subcommands of `kubectl`/`terraform`/`helm`/`eksctl`, `docker push`,
+`git push|commit|tag|merge`, `gh pr create|merge`, `gh release create`, and
+`npm|yarn|pnpm publish`. Read commands (`describe-*`, `list-*`, `get-*`, `plan`, `status`,
+`ls`/`grep`/`dig`/`curl`) are excluded explicitly.
+
+An allowlist rather than "everything that isn't a read": a single session issues dozens of
+read commands, and they would fill the field's 200-character budget with noise while pushing
+the one mutation that mattered outside the cut.
+
+Command text is redacted (`redactSecrets`) before it reaches the note, splitting is
+quote-aware, and heredoc bodies are dropped — writing a fixture or a script that *mentions*
+`git push` does not count as having run it.
 
 ## Writing a note
 
@@ -115,6 +139,11 @@ not in a portable bootstrap.
 
 - `capture.mjs` cannot decide what is durable — it only records mechanically. "Forgetting to
   write it down" becomes visible debt in the inbox instead of silent loss.
+- `ops` is an allowlist, so a mutation run through a tool nobody listed is invisible. Adding a
+  tool is one line in `SUBCOMMAND_RULES`; the alternative (capture everything) was measured and
+  is worse.
+- Heredoc detection is line-based: a `<<` appearing inside an already-quoted argument would
+  start swallowing lines. Rare enough to accept, not airtight.
 - The index does not shrink on its own. `archive.mjs` exists, but you choose what to drop.
 - Codex clamps its `SessionEnd` hook to a few seconds at runtime; the capture script finishes
   well under that, but a very large rollout file is the thing to watch.

@@ -262,6 +262,132 @@ export function syncIndexes({ only = null, check = false } = {}) {
   return { stale, added };
 }
 
+// --- redaksiyon ------------------------------------------------------------
+// TEK KAYNAK. Hem prompt hem komut metni buradan geçer. Komutlar dosya yollarından
+// çok daha sık secret taşıyor (`--secret-string`, `--password`, satır içi TOKEN=...),
+// ve inbox bulut senkronlu bir vault'a yazıyor — redaksiyon opsiyonel değil.
+export const redactSecrets = (text) => String(text)
+  .replace(/\b(?:sk|ghp|github_pat|xox[baprs])[-_][A-Za-z0-9_-]{8,}\b/gi, '[REDACTED]')
+  .replace(/\b(AKIA[0-9A-Z]{12,})\b/g, '[REDACTED]')
+  .replace(/\b((?:api[_-]?key|token|password|secret)\s*[:=]\s*)\S+/gi, '$1[REDACTED]')
+  .replace(/(--(?:secret-string|password|token|api-key|secret)(?:=|\s+))(?!\[REDACTED\])\S+/gi, '$1[REDACTED]');
+
+// --- ops komut tespiti ------------------------------------------------------
+// NEDEN ALLOWLIST: bir oturumda onlarca okuma komutu (ls/grep/dig/aws describe-*) geçiyor.
+// "Okuma olmayan her şey" kuralı hem `ops` alanının 200 karakterlik bütçesini hem brief'in
+// 8.000 karakterini patlatır ve asıl mutasyonu kırpmanın dışında bırakır. Bu yüzden yalnız
+// DURUMU DEĞİŞTİREN komut aileleri sayılıyor; okuma fiilleri ayrıca açıkça eleniyor.
+const AWS_READ = /^(?:describe|list|get|ls|wait|help|search|scan|query|select|lookup|head|test|validate|estimate|check|filter|presign|preview|generate-presigned)/;
+const AWS_WRITE = /^(?:create|delete|put|update|modify|change|attach|detach|start|stop|reboot|terminate|enable|disable|register|deregister|associate|disassociate|publish|send|invoke|import|export|restore|reset|rotate|revoke|grant|tag|untag|set|add|remove|apply|deploy|run|copy|move|sync|upload|purchase|request|cancel|accept|reject|activate|deactivate|promote|switch|replace|resume|suspend|cp|mv|rm|mb|rb)(?:[-_]|$)/;
+
+const SUBCOMMAND_RULES = {
+  kubectl: /^(?:apply|delete|create|patch|scale|rollout|drain|cordon|uncordon|label|annotate|replace|edit|set|taint|expose|autoscale)$/,
+  terraform: /^(?:apply|destroy|import|taint|untaint|state)$/,
+  helm: /^(?:install|upgrade|uninstall|rollback|delete)$/,
+  eksctl: /^(?:create|delete|upgrade|scale|drain)$/,
+  docker: /^push$/,
+  git: /^(?:push|commit|tag|merge)$/,
+  npm: /^publish$/,
+  yarn: /^publish$/,
+  pnpm: /^publish$/,
+};
+
+// `gh` iki kelimelik: `gh pr create` sayılır, `gh pr list` sayılmaz.
+const GH_RULES = /^(?:pr (?:create|merge|close|ready)|release (?:create|delete|upload)|issue create|repo (?:create|delete))$/;
+
+// Heredoc GÖVDESİ komut değil, veridir. `cat > x <<EOF ... EOF` ile bir test fixture'ı ya da
+// script yazarken içerideki satırlar aynen ayrıştırılırsa "çalıştırılmış" gibi görünür —
+// bu, gerçek bir oturumda ölçülmüş bir false positive kaynağı.
+const stripHeredocBodies = (command) => {
+  const kept = [];
+  let terminator = null;
+  for (const line of String(command).split('\n')) {
+    if (terminator !== null) {
+      if (line.trim() === terminator) terminator = null;
+      continue;
+    }
+    kept.push(line);
+    const opener = line.match(/<<-?\s*(['"]?)([A-Za-z_][A-Za-z0-9_]*)\1/);
+    if (opener) terminator = opener[2];
+  }
+  return kept.join('\n');
+};
+
+// Komut dizisini segmentlere böler: `&&`, `||`, `;`, `|`, `&` ve satır sonu.
+// TIRNAK DUYARLI olmak ZORUNDA: `node -e "... && git push ..."` gibi bir çağrıda içerideki
+// metin argümandır, çalıştırılan komut değil; naif split onu ayrı bir komutmuş gibi gösterir.
+const segments = (command) => {
+  const text = stripHeredocBodies(command);
+  const parts = [];
+  let current = '';
+  let quote = null;
+  for (let i = 0; i < text.length; i += 1) {
+    const ch = text[i];
+    if (ch === '\\' && i + 1 < text.length) { current += ch + text[i + 1]; i += 1; continue; }
+    if (quote) {
+      if (ch === quote) quote = null;
+      current += ch;
+      continue;
+    }
+    if (ch === '"' || ch === '\'') { quote = ch; current += ch; continue; }
+    if (ch === '\n' || ch === ';') { parts.push(current); current = ''; continue; }
+    if (ch === '|' || ch === '&') {
+      // `2>&1`, `&>log` gibi yönlendirmelerdeki `&` ayırıcı DEĞİL; ayrılırsa komut
+      // etiketi `git push origin X 2>` diye kesik kalır (gerçek oturumda ölçüldü).
+      if (ch === '&' && text[i + 1] !== '&' && (text[i - 1] === '>' || text[i + 1] === '>')) {
+        current += ch;
+        continue;
+      }
+      if (text[i + 1] === ch) i += 1; // `&&` / `||`
+      parts.push(current);
+      current = '';
+      continue;
+    }
+    current += ch;
+  }
+  parts.push(current);
+  return parts;
+};
+
+// Segmentin başındaki gürültüyü at: `sudo`, `command`, ve `VAR=deger` ön ekleri.
+const bareTokens = (segment) => {
+  const tokens = segment.trim().split(/\s+/).filter(Boolean);
+  while (tokens.length && (/^[A-Za-z_][A-Za-z0-9_]*=/.test(tokens[0]) || /^(?:sudo|command|env|time|nohup)$/.test(tokens[0]))) {
+    tokens.shift();
+  }
+  return tokens;
+};
+
+const isOpsSegment = (tokens) => {
+  if (!tokens.length) return false;
+  const tool = basename(tokens[0]);
+  const rest = tokens.slice(1).filter((t) => !t.startsWith('-'));
+
+  if (tool === 'aws') {
+    const operation = rest[1] || ''; // aws <servis> <islem>
+    if (!operation || AWS_READ.test(operation)) return false;
+    return AWS_WRITE.test(operation);
+  }
+  if (tool === 'gh') return GH_RULES.test(rest.slice(0, 2).join(' '));
+  if (tool === 'terraform' && rest[0] === 'state') return /^(?:mv|rm|push)$/.test(rest[1] || '');
+
+  const rule = SUBCOMMAND_RULES[tool];
+  return Boolean(rule && rule.test(rest[0] || ''));
+};
+
+// Bir shell komut metninden kayda değer ops segmentlerini döner (redakte, tekilleştirilmiş).
+// Çıkış koduna BAKILMAZ: tool_use bloğunda exit status yok, tool_result ile eşleştirmenin
+// maliyeti değmiyor — başarısız bir mutasyon denemesi de bilinmeye değer.
+export function opsFromCommand(command) {
+  const found = [];
+  for (const segment of segments(command)) {
+    if (!isOpsSegment(bareTokens(segment))) continue;
+    const clean = redactSecrets(segment).replace(/\s+/g, ' ').trim();
+    if (clean && !found.includes(clean)) found.push(clean);
+  }
+  return found;
+}
+
 // Bir dosya yolu vault'taki hangi leaf klasöre ait? (harness symlink'i üzerinden gelse bile)
 // Dönen: { dir, isIndex } | null
 export function leafForFile(filePath) {

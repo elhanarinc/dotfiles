@@ -8,17 +8,21 @@
 // Aynı session_id tekrar biterse (resume) dosyanın üzerine yazar — inbox şişmez.
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { join, basename } from 'node:path';
-import { INBOX_DIR, VAULT, readHookInput, workspaceForCwd, syncIndexes } from './lib.mjs';
+import { INBOX_DIR, VAULT, readHookInput, workspaceForCwd, syncIndexes, redactSecrets, opsFromCommand } from './lib.mjs';
 
 const MIN_PROMPTS = 2; // tek soruluk oturumlar inbox'a girmez
+const MAX_OPS = 12; // gövdede listelenecek komut sayısı
 
 const EDIT_TOOLS = new Set(['Write', 'Edit', 'MultiEdit', 'NotebookEdit']);
 
-// Transcript'i TEK geçişte tarar: promptlar + yazılan dosyalar + yazılan memory notları.
+// Transcript'i TEK geçişte tarar: promptlar + yazılan dosyalar + yazılan memory notları
+// + çalıştırılan ops komutları.
 // "Nerede kalmıştık" sorusunu cevaplayabilmek için promptlar YETMİYOR (onlar ne SORDUĞUNU
 // söyler, nerede KALDIĞINI söylemez) — hangi dosyalara dokunulduğu asıl sinyal.
+// Dosya de YETMİYOR: DNS/IAM/deploy gibi işler baştan sona Bash'ten yürüyor ve tek bir
+// dosyaya dokunmuyor — o oturumlar `touched` boş kalıp "hiçbir şey olmadı" gibi görünüyordu.
 const scanTranscript = (transcriptPath, cwd) => {
-  const out = { prompts: [], files: [], notes: [] };
+  const out = { prompts: [], files: [], notes: [], ops: [] };
   if (!transcriptPath || !existsSync(transcriptPath)) return out;
   const seenFile = new Set();
 
@@ -31,7 +35,14 @@ const scanTranscript = (transcriptPath, cwd) => {
     // --- asistanın yazma çağrıları ---
     if (ev.type === 'assistant' && Array.isArray(content)) {
       for (const b of content) {
-        if (b?.type !== 'tool_use' || !EDIT_TOOLS.has(b.name)) continue;
+        if (b?.type !== 'tool_use') continue;
+        if (b.name === 'Bash') {
+          for (const op of opsFromCommand(b.input?.command || '')) {
+            if (!out.ops.includes(op)) out.ops.push(op);
+          }
+          continue;
+        }
+        if (!EDIT_TOOLS.has(b.name)) continue;
         const p = b.input?.file_path;
         if (typeof p !== 'string' || seenFile.has(p)) continue;
         seenFile.add(p);
@@ -61,10 +72,16 @@ const scanTranscript = (transcriptPath, cwd) => {
 };
 
 // Frontmatter tek satır olmak ZORUNDA — lib.mjs'in parser'ı katlanmış YAML'ı kırpar.
+// Redaksiyon burada: inbox'a giden HER metin (prompt, komut, yol) tek kapıdan geçsin.
 const oneLine = (s, max) => {
-  const t = String(s).replace(/\s+/g, ' ').replace(/"/g, "'").trim();
+  const t = redactSecrets(s).replace(/\s+/g, ' ').replace(/"/g, "'").trim();
   return t.length > max ? `${t.slice(0, max)}…` : t;
 };
+
+// Değer JSON.stringify ile kaçırılmak ZORUNDA. Komutlar ters bölü ve tırnak taşıyor
+// (`--filter a\,b`); elle `"..."` sarılırsa lib.mjs'in parser'ı JSON.parse'ta düşüp
+// naif kırpmaya geriler ve alan bozuk okunur. codex-capture.mjs ile aynı sözleşme.
+const quoted = (s, max) => JSON.stringify(oneLine(s, max));
 
 const main = async () => {
   const input = await readHookInput();
@@ -79,7 +96,7 @@ const main = async () => {
   const ws = workspaceForCwd(input.cwd || '');
   if (!ws) return;
 
-  const { prompts, files, notes } = scanTranscript(input.transcript_path, input.cwd);
+  const { prompts, files, notes, ops } = scanTranscript(input.transcript_path, input.cwd);
   if (prompts.length < MIN_PROMPTS) return;
 
   mkdirSync(join(INBOX_DIR, ws), { recursive: true });
@@ -96,9 +113,10 @@ const main = async () => {
     `date: ${day}`,
     `project: ${basename(input.cwd || '')}`,
     `ended: ${now.toISOString()}`,
-    `topic: "${oneLine(prompts[0] || '', 150)}"`,
-    `touched: "${oneLine(files.slice(0, 6).join(', '), 200)}"`,
-    `notes: "${oneLine(notes.join(', '), 150)}"`,
+    `topic: ${quoted(prompts[0] || '', 150)}`,
+    `touched: ${quoted(files.slice(0, 6).join(', '), 200)}`,
+    `ops: ${quoted(ops.slice(0, 6).join(', '), 200)}`,
+    `notes: ${quoted(notes.join(', '), 150)}`,
     `session_id: ${input.session_id || ''}`,
     `transcript: ${input.transcript_path || ''}`,
     `end_reason: ${input.reason || ''}`,
@@ -112,6 +130,12 @@ const main = async () => {
     ...prompts.map((p) => `- ${p.replace(/\n+/g, ' ')}`),
     '',
     ...(files.length ? ['## Dokunulan dosyalar', ...files.map((f) => `- \`${f}\``), ''] : []),
+    ...(ops.length ? [
+      '## Çalıştırılan ops komutları',
+      ...ops.slice(0, MAX_OPS).map((o) => `- \`${oneLine(o, 300)}\``),
+      ...(ops.length > MAX_OPS ? [`- …+${ops.length - MAX_OPS} komut daha`] : []),
+      '',
+    ] : []),
     ...(notes.length ? ['## Yazılan memory notları', ...notes.map((n) => `- [[${n}]]`), ''] : []),
     '## Küratörlük',
     '- [ ] Kalıcı bir şey var mı? Varsa memory notuna işle, sonra bu dosyayı sil.',

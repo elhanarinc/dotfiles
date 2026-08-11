@@ -8,7 +8,7 @@
 - Never hand-edit generated `MEMORY.md` files and never run a reindex by hand; the hooks own the index. Notes must include `name`, `index_title`, `index_hook`, `description`, and `metadata.type`.
 - Update `bin/state/tasks/<workspace>.md` checkboxes when durable task state changes.
 - Current repository and live evidence outrank stale brain notes. Update or archive notes that have drifted.
-- User prompt capture is local and intentionally matches Claude's capture behavior.
+- SessionEnd capture is local and intentionally matches Claude's: prompts, files written, and state-changing shell commands (allowlisted, secrets redacted). It records mechanically and cannot decide what is durable — writing the note is still your job.
 - Outside the configured workspace roots, make no assumption about reading or writing the brain and stay silent.
 - If the current repository has no leaf yet, attach it once:
 

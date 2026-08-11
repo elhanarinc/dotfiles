@@ -72,7 +72,7 @@ node "$HOME/Obsidian/brain/bin/scripts/link-leaf.mjs" personal "$PWD"
 
 `link-leaf.mjs` moves the harness's existing `memory/` folder into the vault and leaves a symlink behind, so nothing written before the brain existed is lost. Until `config.json` lists a root matching the current directory, every hook stays silent and writes nothing.
 
-Session start prints the workspace's open tasks and the last unprocessed capture; session end records the session's prompts and touched files into `bin/state/inbox/`; writing a note regenerates that folder's `MEMORY.md` automatically. `MEMORY.md` is generated — set `index_title` / `index_hook` in a note's frontmatter instead of editing it. Full details in `brain-template/bin/docs/README.md`. Do not store secrets or raw transcripts.
+Session start prints the workspace's open tasks and the last unprocessed capture; session end records the session's prompts, touched files, and state-changing shell commands into `bin/state/inbox/`; writing a note regenerates that folder's `MEMORY.md` automatically. Command capture is an allowlist (cloud/infrastructure mutations, `git push|commit|tag|merge`, release publishes) and is redacted before it is written — read-only commands are excluded. `MEMORY.md` is generated — set `index_title` / `index_hook` in a note's frontmatter instead of editing it. Full details in `brain-template/bin/docs/README.md`. Do not store secrets or raw transcripts.
 
 Codex may require one interactive trust confirmation before local hooks run. The repository intentionally does not copy or fabricate machine-specific trust hashes.
 

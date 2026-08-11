@@ -37,7 +37,7 @@ const openTasks = (taskFile) => {
 
 const metadataLines = (inbox) => {
   if (!inbox) return [];
-  const fields = ['date', 'project', 'topic', 'touched', 'notes', 'status'];
+  const fields = ['date', 'project', 'topic', 'touched', 'ops', 'notes', 'status'];
   const details = fields
     .filter((key) => inbox.metadata[key])
     .map((key) => `${key}: ${inbox.metadata[key]}`);

@@ -54,12 +54,19 @@ assert_contains "$out" "finish the migration"
 transcript="$HOME/transcript.jsonl"
 printf '%s\n' \
   '{"type":"user","message":{"content":"first prompt"}}' \
+  '{"type":"assistant","message":{"content":[{"type":"tool_use","name":"Bash","input":{"command":"aws route53 list-hosted-zones"}}]}}' \
+  '{"type":"assistant","message":{"content":[{"type":"tool_use","name":"Bash","input":{"command":"aws route53 change-resource-record-sets --hosted-zone-id ZTEST"}}]}}' \
   '{"type":"user","message":{"content":"second prompt"}}' > "$transcript"
 printf '{"cwd":"%s","session_id":"abcd1234","transcript_path":"%s","reason":"clear"}' "$project" "$transcript" \
   | "$NODE_BIN" "$S/capture.mjs"
 capture="$BRAIN_DIR/bin/state/inbox/personal/$(date -u +%Y-%m-%d)-abcd1234.md"
 [[ -f "$capture" ]] || fail "session capture missing: $capture"
 assert_contains "$(cat "$capture")" "first prompt"
+
+# a session that touches no file is still recorded: state-changing commands land in `ops`,
+# read-only ones do not
+assert_contains "$(cat "$capture")" 'ops: "aws route53 change-resource-record-sets --hosted-zone-id ZTEST"'
+[[ "$(cat "$capture")" != *"list-hosted-zones"* ]] || fail "a read-only command was captured as ops"
 
 printf '{"cwd":"%s","session_id":"zzzz9999","transcript_path":"%s","reason":"clear"}' "$HOME/elsewhere" "$transcript" \
   | "$NODE_BIN" "$S/capture.mjs"

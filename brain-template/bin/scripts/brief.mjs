@@ -67,6 +67,8 @@ const main = async () => {
     out.push(`### Son oturum — ${ws} · ${fm.date || last.f.slice(0, 10)} (${fm.project || '?'})`);
     if (topic) out.push(`Konu: ${topic}`);
     if (fm.touched) out.push(`Dokunulan: ${fm.touched}`);
+    // Guard'lı: `ops` eklenmeden önce yazılmış inbox notlarında bu alan yok, satır düşer.
+    if (fm.ops) out.push(`Çalıştırılan ops: ${fm.ops}`);
     if (fm.notes) out.push(`Yazılan not: ${fm.notes}`);
     out.push(`Devamı: \`brain/bin/state/inbox/${ws}/${last.f}\`${pending.length > 1 ? ` (+${pending.length - 1} eski)` : ''}`);
     out.push('Küratörlük: kalıcı olanı memory notuna işle, sonra dosyayı sil.');

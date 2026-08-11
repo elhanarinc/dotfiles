@@ -15,10 +15,11 @@ import {
 } from 'node:fs';
 import { basename, isAbsolute, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { INBOX_DIR, VAULT, contextForCwd, readHookInput, syncIndexes } from './lib.mjs';
+import { INBOX_DIR, VAULT, contextForCwd, readHookInput, syncIndexes, redactSecrets, opsFromCommand } from './lib.mjs';
 
 const MIN_PROMPTS = 2;
 const MAX_META_BYTES = 64 * 1024;
+const MAX_OPS = 12;
 
 const isFile = (path) => {
   try { return statSync(path).isFile(); } catch { return false; }
@@ -92,10 +93,34 @@ const candidatePaths = (input) => {
   return [...paths];
 };
 
-const redactSecrets = (text) => String(text)
-  .replace(/\b(?:sk|ghp|github_pat|xox[baprs])[-_][A-Za-z0-9_-]{8,}\b/gi, '[REDACTED]')
-  .replace(/\b(AKIA[0-9A-Z]{12,})\b/g, '[REDACTED]')
-  .replace(/\b((?:api[_-]?key|token|password|secret)\s*[:=]\s*)\S+/gi, '$1[REDACTED]');
+// Codex'in shell aracı. `hooks.json` matcher'ı `(^|__)exec$` — gerçek ad `exec` ya da
+// `container__exec`; tek bir literal ada güvenilmez, kalıba bakılır.
+const SHELL_TOOL = /^(?:exec|shell|local_shell|bash)$|__exec$/i;
+
+// DİKKAT: `function_call.arguments` bir NESNE DEĞİL, JSON *string*'i. Ham hâlde regex'e
+// verilirse heredoc'lu çok satırlı komutlarda `\\n` kaçışları yüzünden sessizce yanlış
+// eşleşir. Önce parse et, olmazsa ham metne düş.
+const parseToolInput = (raw) => {
+  if (raw && typeof raw === 'object') return raw;
+  if (typeof raw !== 'string') return null;
+  try { return JSON.parse(raw); } catch { return raw; }
+};
+
+// Çalıştırılan komutu çıkarır. Codex exec çağrısı `["bash","-lc","<komut>"]` biçiminde
+// gelir; dizi olduğu gibi birleştirilirse tool adı `bash` olur ve allowlist ıskalar.
+const commandText = (raw) => {
+  const value = parseToolInput(raw);
+  if (typeof value === 'string') return value;
+  if (!value || typeof value !== 'object') return '';
+  const command = value.command ?? value.cmd ?? value.input;
+  if (typeof command === 'string') return command;
+  if (!Array.isArray(command)) return '';
+  const last = command[command.length - 1];
+  const isShellWrapper = command.length > 1
+    && /^(?:bash|sh|zsh|dash)$/.test(basename(String(command[0] || '')))
+    && typeof last === 'string';
+  return isShellWrapper ? last : command.filter((part) => typeof part === 'string').join(' ');
+};
 
 const safePrompt = (text) => redactSecrets(text)
   .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, '')
@@ -111,10 +136,11 @@ const isInjectedWorkspaceContext = (content) => {
 };
 
 export function scanCodexRollout(path, cwd) {
-  const scan = { prompts: [], files: [], notes: [] };
+  const scan = { prompts: [], files: [], notes: [], ops: [] };
   if (!path || !isFile(path)) return scan;
   const seenFiles = new Set();
   const seenNotes = new Set();
+  const seenOps = new Set();
 
   let body;
   try { body = readFileSync(path, 'utf8'); } catch { return scan; }
@@ -141,13 +167,24 @@ export function scanCodexRollout(path, cwd) {
     }
 
     if (!['custom_tool_call', 'function_call'].includes(item.type)) continue;
-    const strings = allStrings(item.input ?? item.arguments);
+    const rawInput = item.input ?? item.arguments;
     const toolName = String(item.name || '');
+
+    // Dosyaya dokunmayan ops işleri (DNS, IAM, deploy) yalnız burada görünür.
+    if (SHELL_TOOL.test(toolName)) {
+      for (const op of opsFromCommand(commandText(rawInput))) {
+        if (seenOps.has(op)) continue;
+        seenOps.add(op);
+        scan.ops.push(op);
+      }
+    }
+
+    const strings = allStrings(rawInput);
     const isWrite = /apply_patch|write|edit/i.test(toolName)
       || strings.some((text) => /apply_patch|\*\*\* (?:Add|Update) File:/.test(text));
     if (!isWrite) continue;
 
-    for (let candidate of candidatePaths(item.input ?? item.arguments)) {
+    for (let candidate of candidatePaths(rawInput)) {
       candidate = candidate.trim();
       if (!isAbsolute(candidate)) candidate = resolve(cwd || process.cwd(), candidate);
       if (candidate.startsWith(`${VAULT}/`) && candidate.endsWith('.md')) {
@@ -206,6 +243,7 @@ export function renderInboxNote({ sessionId, cwd, rolloutPath, scan, endedAt }) 
   const prompts = Array.isArray(scan?.prompts) ? scan.prompts : [];
   const files = Array.isArray(scan?.files) ? scan.files : [];
   const notes = Array.isArray(scan?.notes) ? scan.notes : [];
+  const ops = Array.isArray(scan?.ops) ? scan.ops : [];
   const title = readableTitle(prompts[0] || '');
   return [
     '---',
@@ -215,6 +253,7 @@ export function renderInboxNote({ sessionId, cwd, rolloutPath, scan, endedAt }) 
     `title: ${quoted(title, 100)}`,
     `topic: ${quoted(prompts[0] || '', 150)}`,
     `touched: ${quoted(files.slice(0, 6).join(', '), 200)}`,
+    `ops: ${quoted(ops.slice(0, 6).join(', '), 200)}`,
     `notes: ${quoted(notes.join(', '), 150)}`,
     `status: unprocessed`,
     `session_id: ${quoted(sessionId || '', 200)}`,
@@ -228,6 +267,12 @@ export function renderInboxNote({ sessionId, cwd, rolloutPath, scan, endedAt }) 
     ...prompts.map((prompt) => `- ${oneLine(prompt, 300)}`),
     '',
     ...(files.length ? ['## Dokunulan dosyalar', ...files.map((file) => `- \`${oneLine(file, 300)}\``), ''] : []),
+    ...(ops.length ? [
+      '## Çalıştırılan ops komutları',
+      ...ops.slice(0, MAX_OPS).map((op) => `- \`${oneLine(op, 300)}\``),
+      ...(ops.length > MAX_OPS ? [`- …+${ops.length - MAX_OPS} komut daha`] : []),
+      '',
+    ] : []),
     ...(notes.length ? ['## Yazılan brain notları', ...notes.map((note) => `- [[${oneLine(note, 150)}]]`), ''] : []),
     '## Küratörlük',
     '- [ ] Kalıcı bir şey varsa doğru leaf notuna işle; sonra bu inbox kaydını kaldır.',
