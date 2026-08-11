@@ -87,9 +87,11 @@ recorded with an empty `touched` and read as "nothing happened".
 
 The rule is `opsFromCommand` in `lib.mjs`, and it is an **allowlist**: `aws` mutating verbs,
 the state-changing subcommands of `kubectl`/`terraform`/`helm`/`eksctl`, `docker push`,
-`git push|commit|tag|merge`, `gh pr create|merge`, `gh release create`, and
-`npm|yarn|pnpm publish`. Read commands (`describe-*`, `list-*`, `get-*`, `plan`, `status`,
-`ls`/`grep`/`dig`/`curl`) are excluded explicitly.
+`git push|tag|merge`, `gh pr create|merge`, `gh release create`, and `npm|yarn|pnpm publish`.
+Read commands (`describe-*`, `list-*`, `get-*`, `plan`, `status`, `ls`/`grep`/`dig`/`curl`)
+are excluded explicitly, and so is `git commit`: it recurs several times in any coding
+session, crowding out the deploy that mattered, and in those sessions `touched` already tells
+the story. What leaves the machine is `push`.
 
 An allowlist rather than "everything that isn't a read": a single session issues dozens of
 read commands, and they would fill the field's 200-character budget with noise while pushing

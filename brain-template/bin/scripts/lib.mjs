@@ -286,7 +286,10 @@ const SUBCOMMAND_RULES = {
   helm: /^(?:install|upgrade|uninstall|rollback|delete)$/,
   eksctl: /^(?:create|delete|upgrade|scale|drain)$/,
   docker: /^push$/,
-  git: /^(?:push|commit|tag|merge)$/,
+  // `commit` bilerek YOK: her dev oturumunda birden çok kez geçip `ops`'un 200 karakterini
+  // yiyor ve asıl ilginç olanı (docker push, kubectl rollout) kırpmanın dışına itiyor —
+  // üstelik o oturumlarda `touched` zaten hikâyeyi anlatıyor. Dışarı çıkan iş `push`.
+  git: /^(?:push|tag|merge)$/,
   npm: /^publish$/,
   yarn: /^publish$/,
   pnpm: /^publish$/,
