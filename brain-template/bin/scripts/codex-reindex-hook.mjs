@@ -1,8 +1,8 @@
 // Codex PostToolUse hook. Direct file_path, patch metadata ve outer exec içindeki
 // nested apply_patch yollarını çözer; yalnız vault'taki non-index Markdown notlarını eşitler.
-import { isAbsolute, join, resolve } from 'node:path';
+import { basename, isAbsolute, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { contextForCwd, leafForFile, readHookInput, syncIndexes } from './lib.mjs';
+import { contextForCwd, leafForFile, oneWayLinks, readHookInput, syncIndexes } from './lib.mjs';
 
 const strings = (value, out = []) => {
   if (typeof value === 'string') out.push(value);
@@ -49,12 +49,22 @@ const main = async () => {
   if (!context) return;
 
   const dirs = new Set();
+  const written = [];
   for (const candidate of candidatesFromInput(input)) {
     const path = normalizePath(candidate, input?.cwd);
     const leaf = leafForFile(path);
-    if (leaf && !leaf.isIndex) dirs.add(leaf.dir);
+    if (leaf && !leaf.isIndex) { dirs.add(leaf.dir); written.push([leaf.dir, basename(path)]); }
   }
   for (const dir of dirs) syncIndexes({ only: [dir] });
+
+  // Claude tarafındaki reindex-hook ile aynı sözleşme: karşılığı olmayan peer linkleri
+  // yazma anında söyle. İki hook ayrışırsa Codex'te yazılan notlar denetimsiz kalır.
+  const oneWay = [...new Set(written.flatMap(([dir, file]) => oneWayLinks(dir, file)))];
+  if (oneWay.length) {
+    process.stdout.write(
+      `brain: tek yönlü link — ${oneWay.slice(0, 5).join(', ')} notuna geri link yok.\n`,
+    );
+  }
 };
 
 const isMain = process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1]);

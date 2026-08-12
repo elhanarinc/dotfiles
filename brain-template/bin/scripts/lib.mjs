@@ -391,6 +391,62 @@ export function opsFromCommand(command) {
   return found;
 }
 
+// Wikilink adlarını karşılaştırmak için normalize eder: dosya adı `project_x_y.md` ile
+// frontmatter slug'ı `project-x-y` aynı şeye çözülsün diye tire/alt çizgi/boşluk atılır.
+const linkKey = (s) => String(s).toLowerCase().replace(/\.md$/, '').replace(/[-_\s]/g, '');
+const linksIn = (text) =>
+  [...text.matchAll(/\[\[([^\]|#]+)/g)].map((m) => linkKey(m[1].trim()));
+
+// `dir/file` notunun AYNI klasörde var olan bir nota link verip karşılığını almadığı
+// durumları döner (dosya adları listesi).
+//
+// NEDEN VAR: indeks otomatik eşitleniyor ama notların birbirine bağlanması semantik bir
+// karar ve zinciri hiçbir şey denetlemiyordu. 2026-08-12'de bir oturum yeni notu yazıp
+// ileri linkleri kurdu, karşı nottaki geri linki atladı; eksik, kullanıcı elle söyleyene
+// kadar görünmedi. Geri linki otomatik YAZMIYORUZ (hangi notun hak ettiği bir karar),
+// sadece aynı turda modele bildiriyoruz.
+//
+// Hedefi olmayan linkler (`[[henuz-yazilmamis-not]]`) KASITLI olarak sayılmaz — fixlinks.mjs
+// ile aynı sözleşme: onlar "yazılacak" işareti, hata değil.
+//
+// SADECE project↔project çiftleri sayılır. `reference`/`feedback`/`user` notları tasarım
+// gereği hub: onlarca proje notu tek bir `[[reference_...]]` notuna link verir ve o notun
+// hepsine geri link vermesi saçma olur. Vault'ta tüm linkleri simetrik sayan bir kural 179 notu işaretliyor
+// (ölçüldü) — yani her yazmada ateşleyip görmezden gelinen bir uyarı olurdu. Kaçırılan gerçek
+// vaka aynı hatayı anlatan iki KARDEŞ proje notu arasındaki bağdı, kural da onu hedefliyor.
+export function oneWayLinks(dir, file, notes = loadNotes(dir)) {
+  const self = notes.find((n) => n.file === file);
+  if (!self || self.type !== 'project') return [];
+
+  const byKey = new Map(notes.map((n) => [linkKey(n.file), n]));
+  const selfKeys = new Set(
+    [self.file, parseFrontmatter(self.text).name].filter(Boolean).map(linkKey),
+  );
+
+  const out = [];
+  for (const target of new Set(linksIn(self.text))) {
+    const note = byKey.get(target);
+    if (!note || note.file === self.file || note.type !== 'project') continue;
+    const back = new Set(linksIn(note.text));
+    if (![...selfKeys].some((k) => back.has(k))) out.push(note.file);
+  }
+  return out;
+}
+
+// Bir leaf'in TAMAMINDAKİ tek yönlü linkler. Notları BİR KEZ okur: not başına oneWayLinks
+// çağırmak klasörü her seferinde yeniden okuyordu (64 notluk leaf = 4096 dosya okuması),
+// bu da açılış brief'i gibi sıcak yollarda kabul edilemez.
+// Dönen: [{ file, targets: [dosya adı] }]
+export function oneWayLinksInLeaf(dir) {
+  const notes = loadNotes(dir);
+  const out = [];
+  for (const n of notes) {
+    const targets = oneWayLinks(dir, n.file, notes);
+    if (targets.length) out.push({ file: n.file, targets });
+  }
+  return out;
+}
+
 // Bir dosya yolu vault'taki hangi leaf klasöre ait? (harness symlink'i üzerinden gelse bile)
 // Dönen: { dir, isIndex } | null
 export function leafForFile(filePath) {

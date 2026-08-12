@@ -6,7 +6,8 @@
 // modelin bir komutu hatırlamasına bağlı olamaz — o iş bu hook'un.
 //
 // Vault dışındaki her yazma için sessizce çıkar. Asla patlamaz, asla engellemez.
-import { readHookInput, leafForFile, syncIndexes } from './lib.mjs';
+import { basename } from 'node:path';
+import { readHookInput, leafForFile, syncIndexes, oneWayLinks } from './lib.mjs';
 
 const main = async () => {
   const input = await readHookInput();
@@ -28,6 +29,16 @@ const main = async () => {
 
   const { added } = syncIndexes({ only: [leaf.dir] });
   if (added.length) process.stdout.write(`brain: ${added.length} not indekse eklendi (otomatik).\n`);
+
+  // Linkler indeks gibi otomatik onarılamaz (hangi notun geri link hak ettiği bir karar),
+  // ama tek yönlü kalanı aynı turda söylemek elle hatırlatmaya gerek bırakmıyor.
+  const oneWay = oneWayLinks(leaf.dir, basename(file));
+  if (oneWay.length) {
+    process.stdout.write(
+      `brain: tek yönlü link — bu not ${oneWay.slice(0, 5).join(', ')} notuna link veriyor ama ` +
+      'karşılığı yok.\nİlgili notlara geri linki ekle; bilinçli tek yönlüyse geç.\n',
+    );
+  }
 };
 
 main().catch(() => {}).finally(() => process.exit(0));

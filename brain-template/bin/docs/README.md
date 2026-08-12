@@ -62,7 +62,7 @@ Claude (`~/.claude/settings.json`):
 |---|---|---|
 | `SessionStart` | `bin/scripts/brief.mjs` | Prints the workspace's open tasks and the last unprocessed inbox capture. |
 | `SessionEnd` | `bin/scripts/capture.mjs` | Writes the session's prompts, touched files and ops commands to `bin/state/inbox/<workspace>/`. |
-| `PostToolUse` (`Write\|Edit`) | `bin/scripts/reindex-hook.mjs` | Regenerates the leaf `MEMORY.md` whenever a note is written. |
+| `PostToolUse` (`Write\|Edit`) | `bin/scripts/reindex-hook.mjs` | Regenerates the leaf `MEMORY.md` whenever a note is written, and reports the note's one-way peer links (below). |
 
 Codex (`~/.codex/hooks.json`, contract in `~/.codex/AGENTS.md`) uses the same vault through
 `codex-brief.mjs`, `codex-capture.mjs` and `codex-reindex-hook.mjs`. Codex's built-in
@@ -74,6 +74,38 @@ Hooks are global and fire in every directory on the machine. Each one maps `cwd`
 `SessionStart` stdout goes straight into the context window (**10,000 character limit**);
 `brief.mjs` truncates at 8,000 and deliberately does not repeat `MEMORY.md`, which the harness
 already loads.
+
+## One-way link reporting
+
+Indexing is automatic, but connecting notes to each other is a judgment call and nothing used to
+check it: a session would write a new note, add the forward links, and skip the backlink on the
+sibling note. The gap stayed invisible until a human noticed it — the same shape of failure the
+index hook was built to end. `reindex-hook.mjs` now looks at the `[[links]]` of the note just
+written and names the ones that are not reciprocated, in the same turn.
+
+It never writes the backlink for you: which note deserves one is a decision, so the hook only
+reports. The rule is deliberately narrow (`lib.mjs` → `oneWayLinks`):
+
+- **project↔project pairs only.** `reference` / `feedback` / `user` notes are hubs by design —
+  dozens of project notes point at one reference note, and expecting it to point back at all of
+  them is nonsense.
+- **resolvable targets only.** `[[note-not-written-yet]]` is a to-do marker, not an error — the
+  same contract `fixlinks.mjs` honours.
+- comparison ignores filename ↔ slug differences (`project_x_y.md` matches `[[project-x-y]]`).
+
+Counting every link as symmetric flagged 179 notes in a real vault of ~300; the narrow rule cut
+that to 94 and emits 0–2 lines per write. Three layers, mirroring how indexing works:
+
+1. `PostToolUse` (both the Claude and the Codex hook) reports at write time,
+2. `SessionStart` (`brief.mjs`) shows what is left per leaf — notes edited by hand in Obsidian
+   fire no hook at all, and this is the only thing that catches those,
+3. `bin/scripts/backlink.mjs --apply` closes the accumulated backlog in one pass: it appends the
+   source to the target's trailing `İlgili:` ("related") line, creating the line if absent. It
+   never touches frontmatter, it is idempotent, and every file it writes is listed in
+   `bin/state/backlink-<timestamp>.log` — the vault is not a git repo, so that log is the undo
+   record.
+
+Tests: `node bin/tests/onewaylinks.test.mjs` and `node bin/tests/backlink.test.mjs`.
 
 ## What an inbox capture records
 
@@ -130,6 +162,8 @@ $N ~/Obsidian/brain/bin/scripts/audit.mjs             # resolve every leaf to it
 $N ~/Obsidian/brain/bin/scripts/prune.mjs --apply     # archive leaves whose repo is gone
 $N ~/Obsidian/brain/bin/scripts/archive.mjs personal/_kok/old_note.md
 $N ~/Obsidian/brain/bin/scripts/fixlinks.mjs          # repair mechanical [[wikilink]] mismatches
+$N ~/Obsidian/brain/bin/scripts/backlink.mjs          # report one-way project↔project links
+$N ~/Obsidian/brain/bin/scripts/backlink.mjs --apply  # write the missing backlinks (idempotent)
 $N ~/Obsidian/brain/bin/scripts/unmigrate.mjs         # full undo plan (--apply to execute)
 ```
 

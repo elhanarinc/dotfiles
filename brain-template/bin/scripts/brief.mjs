@@ -4,7 +4,7 @@
 // Asla patlamaz, asla yavaşlamaz: her hata sessizce yutulur, exit 0.
 import { readFileSync, readdirSync, existsSync, statSync } from 'node:fs';
 import { join, basename } from 'node:path';
-import { VAULT, TASK_DIR, INBOX_DIR, readHookInput, workspaceForCwd, syncIndexes, parseFrontmatter, auditLeaves } from './lib.mjs';
+import { VAULT, TASK_DIR, INBOX_DIR, readHookInput, workspaceForCwd, syncIndexes, parseFrontmatter, auditLeaves, listLeafDirs, oneWayLinksInLeaf } from './lib.mjs';
 
 const LIMIT = 8000;
 
@@ -93,6 +93,25 @@ const main = async () => {
       out.push(`O dizinde oturum açılınca yüklenir; buradan okumak için: \`brain/${ws}/<ad>/MEMORY.md\``);
     }
   } catch { /* körlük uyarısı verilemese bile brief çıksın */ }
+
+  // --- tek yönlü link borcu ---
+  // PostToolUse hook'u yalnız AJANIN yazdığı notta ateşleniyor; Obsidian'da elle düzenlenen
+  // ya da başka bir yoldan gelen notların asimetrisi hiçbir yerde görünmüyordu. Borç 2026-08-12'de
+  // sıfırlandı (bin/scripts/backlink.mjs), bu satır yeniden sessizce birikmesini engelliyor.
+  // Leaf başına ~3ms; açılışın 400ms bütçesinde sorun değil.
+  try {
+    const debt = listLeafDirs()
+      .filter((l) => l.ws === ws)
+      .map((l) => ({ label: l.label, n: oneWayLinksInLeaf(l.dir).length }))
+      .filter((r) => r.n);
+    if (debt.length) {
+      out.push(
+        '',
+        `### tek yönlü link: ${debt.map((d) => `${d.label}(${d.n})`).join(', ')}`,
+        'Karşılığı olmayan peer link var. Kapatmak için: `node ~/Obsidian/brain/bin/scripts/backlink.mjs --apply`',
+      );
+    }
+  } catch { /* link borcu sayılamasa bile brief çıksın */ }
 
   if (!out.length) return;
 
