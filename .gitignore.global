@@ -1,0 +1,21 @@
+# Global git excludes — linked to ~/.gitignore (core.excludesfile in .gitconfig)
+# Repo-specific patterns belong in the repo's own .gitignore, not here.
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Editor scratch
+*.swp
+*.swo
+*~
+
+# direnv (per-project env; the .envrc itself is usually committed)
+.direnv/
+
+# Claude Code machine-local settings
+**/.claude/settings.local.json
+
+# NOTE: .env is deliberately NOT listed. A global ignore for .env silently
+# masks files across every repo; keep it in each repo's own .gitignore.

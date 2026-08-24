@@ -7,6 +7,7 @@ detect_os
 link_file "$DOTFILES_DIR/.zshrc" "$HOME/.zshrc"
 link_file "$DOTFILES_DIR/.aliases" "$HOME/.aliases"
 link_file "$DOTFILES_DIR/.gitconfig" "$HOME/.gitconfig"
+link_file "$DOTFILES_DIR/.gitignore.global" "$HOME/.gitignore"
 link_file "$DOTFILES_DIR/.vimrc" "$HOME/.vimrc"
 link_file "$DOTFILES_DIR/.inputrc" "$HOME/.inputrc"
 link_file "$DOTFILES_DIR/.tmux.conf" "$HOME/.tmux.conf"

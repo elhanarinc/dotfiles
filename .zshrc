@@ -19,6 +19,12 @@ if command -v brew &>/dev/null; then
   FPATH="$(brew --prefix)/share/zsh-completions:$(brew --prefix)/share/zsh/site-functions:$FPATH"
 fi
 
+# Docker Desktop completions — must also be before oh-my-zsh's compinit.
+# Docker's installer appends its own fpath+compinit block to the END of this
+# file on update; that second compinit is redundant. Delete the appended block
+# and keep this line instead.
+[[ -d "$HOME/.docker/completions" ]] && FPATH="$HOME/.docker/completions:$FPATH"
+
 # Plugins — order matters:
 # fzf-tab must come before zsh-syntax-highlighting
 plugins=(
@@ -124,7 +130,10 @@ alias k=kubectl
 # =============================================================
 # fzf
 # =============================================================
-if [ -f ~/.fzf.zsh ]; then
+# fzf >= 0.48 ships its own shell integration; prefer it over hand-rolled paths
+if command -v fzf &>/dev/null && fzf --zsh &>/dev/null; then
+  source <(fzf --zsh)
+elif [ -f ~/.fzf.zsh ]; then
   source ~/.fzf.zsh
 elif command -v brew &>/dev/null; then
   _fzf_prefix="$(brew --prefix fzf 2>/dev/null || echo '')"
@@ -137,6 +146,12 @@ fi
 export FZF_DEFAULT_OPTS='--height 40% --layout=reverse --border --inline-info'
 if command -v rg &>/dev/null; then
   export FZF_DEFAULT_COMMAND='rg --files --hidden --follow --glob "!.git"'
+fi
+# Ctrl-T (files) and Alt-C (dirs) do NOT inherit FZF_DEFAULT_COMMAND — set them
+# explicitly so both respect .gitignore via fd
+if command -v fd &>/dev/null; then
+  export FZF_CTRL_T_COMMAND='fd --type f --hidden --follow --exclude .git'
+  export FZF_ALT_C_COMMAND='fd --type d --hidden --follow --exclude .git'
 fi
 
 # =============================================================
@@ -158,6 +173,13 @@ if command -v starship &>/dev/null; then
 fi
 
 # =============================================================
+# direnv — per-project environment via .envrc (keeps keys out of .zshrc.local)
+# =============================================================
+if command -v direnv &>/dev/null; then
+  eval "$(direnv hook zsh)"
+fi
+
+# =============================================================
 # zoxide (smart cd) — must be last to avoid hook conflicts
 # Disable doctor check: lazy-loaded nvm adds a chpwd hook on first use,
 # which triggers a false-positive "not initialized last" warning.
@@ -167,14 +189,3 @@ if command -v zoxide &>/dev/null; then
   eval "$(zoxide init zsh --cmd cd)"
 fi
 
-
-# Added by Antigravity CLI installer
-export PATH="$HOME/.local/bin:$PATH"
-
-# kimi-code
-export PATH="$HOME/.kimi-code/bin:$PATH"
-# The following lines have been added by Docker Desktop to enable Docker CLI completions.
-fpath=("$HOME/.docker/completions" $fpath)
-autoload -Uz compinit
-compinit
-# End of Docker CLI completions

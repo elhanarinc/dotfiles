@@ -24,9 +24,10 @@ fi
 # =============================================================
 # File viewing — bat with fallback to cat
 # =============================================================
+# NOTE: `less` is intentionally NOT aliased to bat — it would break
+# `less -S`, `less +F`, `less -N`. Use `bat` explicitly when paging is wanted.
 if command -v bat &>/dev/null; then
   alias cat='bat --paging=never'
-  alias less='bat'
 fi
 
 # =============================================================
@@ -36,7 +37,7 @@ alias ..='cd ..'
 alias ...='cd ../..'
 alias ....='cd ../../..'
 alias ~='cd ~'
-alias dotfiles='cd ~/Desktop/dotfiles'
+alias dotfiles='cd ~/Desktop/personal-projects/dotfiles'
 
 # =============================================================
 # Networking
