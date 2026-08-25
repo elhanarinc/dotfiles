@@ -63,6 +63,7 @@ Claude (`~/.claude/settings.json`):
 | `SessionStart` | `bin/scripts/brief.mjs` | Prints the workspace's open tasks and the last unprocessed inbox capture. |
 | `SessionEnd` | `bin/scripts/capture.mjs` | Writes the session's prompts, touched files and ops commands to `bin/state/inbox/<workspace>/`. |
 | `PostToolUse` (`Write\|Edit`) | `bin/scripts/reindex-hook.mjs` | Regenerates the leaf `MEMORY.md` whenever a note is written, and reports the note's one-way peer links (below). |
+| `Stop` | `bin/scripts/nudge.mjs` | Nudges once when a substantial session is about to end without a single note (below). |
 
 Codex (`~/.codex/hooks.json`, contract in `~/.codex/AGENTS.md`) uses the same vault through
 `codex-brief.mjs`, `codex-capture.mjs` and `codex-reindex-hook.mjs`. Codex's built-in
@@ -74,6 +75,50 @@ Hooks are global and fire in every directory on the machine. Each one maps `cwd`
 `SessionStart` stdout goes straight into the context window (**10,000 character limit**);
 `brief.mjs` truncates at 8,000 and deliberately does not repeat `MEMORY.md`, which the harness
 already loads.
+
+## The pull layer: `search.mjs`
+
+Everything above is **push**: the brain speaks at session start and writes at session end, and
+does nothing in between. That leaves two holes, and both were repeatedly patched by adding yet
+another push channel — which is why they kept coming back in a new shape.
+
+**Missing context.** The harness loads only the current directory's `MEMORY.md`, and that is
+**one line per note**. Notes in every other leaf are invisible, and even in the loaded leaf the
+note bodies are never opened. Finding the right note depended on that single line happening to
+mention what was asked.
+
+```sh
+node bin/scripts/search.mjs "<terms>" [--ws <name>] [--all] [--type feedback] [--limit N] [--body]
+```
+
+- **No index file, on purpose.** A second source of truth that needs syncing is exactly the
+  failure class this removes. A full scan of a few thousand notes takes milliseconds and the
+  result always matches the disk.
+- **Scope:** by default every leaf of the current workspace plus that workspace's archive.
+  Other workspaces only via `--ws` — so an employer's notes cannot leak into a personal session.
+- **Ranking:** title ×8, `index_hook`/`description` ×4, body ×1; `feedback`/`user` ×1.5 (missing
+  a standing *rule* is the most expensive kind of miss); `archive/` ×0.5 and tagged `[archive]`.
+- **Turkish folding** is applied to the query and the text through the same function
+  (`İ/I/ı → i`, plus `ş/ğ/ü/ö/ç`), so casing never splits a word.
+- Make it mandatory with an always-loaded skill: search before answering anything about past
+  decisions, **before proposing** any tool/channel/idea/spend, and whenever a project other
+  than the current directory comes up.
+
+## The write nudge: `nudge.mjs`
+
+The decision to write a note used to rest entirely on the agent remembering, unprompted:
+`capture.mjs` deliberately refuses to judge what is durable, and the inbox capture is written
+*after* the session ends — far too late to act as a prompt.
+
+- **Threshold:** ≥3 user prompts AND (≥1 mutating ops command OR ≥1 file write) AND no note written.
+- **Channel:** `exit 2` + stderr. A `Stop` hook's `exit 0` stdout goes only to the debug log —
+  neither the user nor the model sees it. So the nudge costs one extra turn, which is why the
+  threshold is high.
+- **Once:** a `bin/state/nudged/<session_id>.txt` marker (written *before* exiting 2) plus the
+  `stop_hook_active` guard. Markers self-clean after 30 days.
+- **Timing limit:** `Stop` fires at the end of every assistant *turn*, not at session end, so
+  the nudge lands at the first turn boundary past the threshold — sometimes mid-task. The
+  message says so, and says no second nudge is coming.
 
 ## One-way link reporting
 
@@ -157,6 +202,7 @@ A generated index can only link inside its own folder; to point elsewhere, write
 ## Maintenance
 
 ```sh
+$N ~/Obsidian/brain/bin/scripts/search.mjs "<terms>"  # DAILY USE: read before answering
 $N ~/Obsidian/brain/bin/scripts/reindex.mjs --check   # stale index? (exit 1 = yes)
 $N ~/Obsidian/brain/bin/scripts/audit.mjs             # resolve every leaf to its real repo path
 $N ~/Obsidian/brain/bin/scripts/prune.mjs --apply     # archive leaves whose repo is gone

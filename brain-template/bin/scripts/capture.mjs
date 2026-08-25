@@ -6,70 +6,17 @@
 // oturumun brief'inde "işlenmemiş inbox" olarak GÖRÜNÜR ve küratörlük oraya kayar.
 //
 // Aynı session_id tekrar biterse (resume) dosyanın üzerine yazar — inbox şişmez.
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
+import { writeFileSync, mkdirSync } from 'node:fs';
 import { join, basename } from 'node:path';
-import { INBOX_DIR, VAULT, readHookInput, workspaceForCwd, syncIndexes, redactSecrets, opsFromCommand } from './lib.mjs';
+import { INBOX_DIR, readHookInput, workspaceForCwd, syncIndexes, redactSecrets, scanTranscript } from './lib.mjs';
 
 const MIN_PROMPTS = 2; // tek soruluk oturumlar inbox'a girmez
 const MAX_OPS = 12; // gövdede listelenecek komut sayısı
 
-const EDIT_TOOLS = new Set(['Write', 'Edit', 'MultiEdit', 'NotebookEdit']);
+// scanTranscript lib.mjs'te duruyor: nudge.mjs (Stop hook) AYNI cevaba ihtiyaç duyuyor ve
+// iki kopya tutmak, bu sistemin tekrar tekrar kırıldığı desenin kendisi olurdu.
+// Testler: bin/tests/nudge.test.mjs — Bash-heredoc ile yazılan notun görülmesi dahil.
 
-// Transcript'i TEK geçişte tarar: promptlar + yazılan dosyalar + yazılan memory notları
-// + çalıştırılan ops komutları.
-// "Nerede kalmıştık" sorusunu cevaplayabilmek için promptlar YETMİYOR (onlar ne SORDUĞUNU
-// söyler, nerede KALDIĞINI söylemez) — hangi dosyalara dokunulduğu asıl sinyal.
-// Dosya de YETMİYOR: DNS/IAM/deploy gibi işler baştan sona Bash'ten yürüyor ve tek bir
-// dosyaya dokunmuyor — o oturumlar `touched` boş kalıp "hiçbir şey olmadı" gibi görünüyordu.
-const scanTranscript = (transcriptPath, cwd) => {
-  const out = { prompts: [], files: [], notes: [], ops: [] };
-  if (!transcriptPath || !existsSync(transcriptPath)) return out;
-  const seenFile = new Set();
-
-  for (const line of readFileSync(transcriptPath, 'utf8').split('\n')) {
-    if (!line.trim()) continue;
-    let ev;
-    try { ev = JSON.parse(line); } catch { continue; }
-    const content = ev.message?.content;
-
-    // --- asistanın yazma çağrıları ---
-    if (ev.type === 'assistant' && Array.isArray(content)) {
-      for (const b of content) {
-        if (b?.type !== 'tool_use') continue;
-        if (b.name === 'Bash') {
-          for (const op of opsFromCommand(b.input?.command || '')) {
-            if (!out.ops.includes(op)) out.ops.push(op);
-          }
-          continue;
-        }
-        if (!EDIT_TOOLS.has(b.name)) continue;
-        const p = b.input?.file_path;
-        if (typeof p !== 'string' || seenFile.has(p)) continue;
-        seenFile.add(p);
-        if (p.includes('/memory/') || p.startsWith(`${VAULT}/`)) {
-          const n = basename(p).replace(/\.md$/, '');
-          if (n !== 'MEMORY' && !out.notes.includes(n)) out.notes.push(n);
-        } else {
-          out.files.push(cwd && p.startsWith(`${cwd}/`) ? p.slice(cwd.length + 1) : basename(p));
-        }
-      }
-      continue;
-    }
-
-    // --- kullanıcı promptları ---
-    if (ev.type !== 'user' || ev.isMeta) continue;
-    let text = '';
-    if (typeof content === 'string') text = content;
-    else if (Array.isArray(content)) {
-      if (content.some((b) => b.type === 'tool_result')) continue; // araç çıktısı, prompt değil
-      text = content.filter((b) => b.type === 'text').map((b) => b.text).join(' ');
-    }
-    text = text.trim();
-    if (!text || text.startsWith('<')) continue; // system-reminder vb.
-    out.prompts.push(text.length > 300 ? `${text.slice(0, 300)}…` : text);
-  }
-  return out;
-};
 
 // Frontmatter tek satır olmak ZORUNDA — lib.mjs'in parser'ı katlanmış YAML'ı kırpar.
 // Redaksiyon burada: inbox'a giden HER metin (prompt, komut, yol) tek kapıdan geçsin.
