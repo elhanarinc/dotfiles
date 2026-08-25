@@ -83,6 +83,13 @@ brew "sentry-cli"       # Upload dSYMs / create releases
 brew "create-dmg"       # Build a distributable .dmg
 brew "fileicon"         # Set custom file/folder icons on build artifacts
 
+# XcodeBuildMCP CLI: agent-facing wrapper over xcodebuild/simctl (build, run,
+# test, log, UI automation). Third-party tap, so a fresh machine needs
+# `brew trust getsentry/xcodebuildmcp` before `brew bundle` can load the
+# formula — `brew bundle` cannot express tap trust on its own.
+tap "getsentry/xcodebuildmcp"
+brew "getsentry/xcodebuildmcp/xcodebuildmcp"
+
 # ============================================================
 # Cloud & DevOps
 # ============================================================
