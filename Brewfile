@@ -111,6 +111,9 @@ brew "poppler"          # PDF utilities
 brew "qpdf"             # PDF inspection and transformation
 brew "ffmpeg"           # Audio/video processing
 brew "imagemagick"      # Image processing
+brew "pngquant"         # Lossy PNG compression — App Store screenshots, web assets
+brew "gifsicle"         # GIF optimisation/resize
+brew "zopfli"           # Zlib-compatible recompression (smallest PNG/gzip)
 brew "watchman"         # Filesystem watcher
 
 # ============================================================
@@ -175,9 +178,6 @@ cask "zulu@17"          # Azul Zulu JDK 17 (LTS)
 # brew "mysql"            # Full MySQL server (mysql-client above is usually enough)
 # brew "speedtest"        # Ookla speedtest CLI (tap: teamookla/speedtest)
 # brew "ghostscript"      # PostScript/PDF interpreter
-# brew "gifsicle"         # GIF optimisation
-# brew "pngquant"         # Lossy PNG compression
-# brew "zopfli"           # Zlib-compatible recompression
 # brew "librsvg"          # SVG rasterisation
 # brew "libmagic"         # File type detection library
 # brew "libimobiledevice" # Talk to iOS devices over USB
