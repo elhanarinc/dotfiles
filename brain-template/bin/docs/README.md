@@ -41,8 +41,8 @@ cp ~/Obsidian/brain/bin/state/config.example.json ~/Obsidian/brain/bin/state/con
 $EDITOR ~/Obsidian/brain/bin/state/config.json
 
 # 2. Attach a project. Run once per repository you want remembered.
-$N ~/Obsidian/brain/bin/scripts/link-leaf.mjs personal ~/Desktop/personal-projects/some-repo
-$N ~/Obsidian/brain/bin/scripts/link-leaf.mjs personal ~/Desktop/personal-projects --as _kok
+$N ~/Obsidian/brain/bin/scripts/link-leaf.mjs <workspace> ~/code/some-repo
+$N ~/Obsidian/brain/bin/scripts/link-leaf.mjs <workspace> ~/code --as _kok
 
 # 3. Confirm the wiring.
 $N ~/Obsidian/brain/bin/scripts/audit.mjs
@@ -60,9 +60,9 @@ Claude (`~/.claude/settings.json`):
 
 | Event | Script | What it does |
 |---|---|---|
-| `SessionStart` | `bin/scripts/brief.mjs` | Prints the workspace's open tasks and the last unprocessed inbox capture. |
+| `SessionStart` | `bin/scripts/brief.mjs` | Prints the workspace's open tasks and the last unprocessed inbox capture; sweeps the workspace for dead links and missing backlinks, and links any unlinked **empty** `memory/` folder into the vault. |
 | `SessionEnd` | `bin/scripts/capture.mjs` | Writes the session's prompts, touched files and ops commands to `bin/state/inbox/<workspace>/`. |
-| `PostToolUse` (`Write\|Edit`) | `bin/scripts/reindex-hook.mjs` | Regenerates the leaf `MEMORY.md` whenever a note is written, and reports the note's one-way peer links (below). |
+| `PostToolUse` (`Write\|Edit\|Bash`) | `bin/scripts/reindex-hook.mjs` | Regenerates the leaf `MEMORY.md` whenever a note is written, repairs the note's dead wikilinks and **writes** the missing peer backlinks (below). |
 | `Stop` | `bin/scripts/nudge.mjs` | Nudges once when a substantial session is about to end without a single note (below). |
 
 Codex (`~/.codex/hooks.json`, contract in `~/.codex/AGENTS.md`) uses the same vault through
@@ -120,37 +120,52 @@ The decision to write a note used to rest entirely on the agent remembering, unp
   the nudge lands at the first turn boundary past the threshold — sometimes mid-task. The
   message says so, and says no second nudge is coming.
 
-## One-way link reporting
+## Self-healing links
 
-Indexing is automatic, but connecting notes to each other is a judgment call and nothing used to
-check it: a session would write a new note, add the forward links, and skip the backlink on the
-sibling note. The gap stayed invisible until a human noticed it — the same shape of failure the
-index hook was built to end. `reindex-hook.mjs` now looks at the `[[links]]` of the note just
-written and names the ones that are not reciprocated, in the same turn.
+Indexing is automatic, but connecting notes to each other used to be checked by nobody: a session
+would write a new note, add the forward links, and skip the backlink on the sibling note. The gap
+stayed invisible until a human noticed it — the same shape of failure the index hook was built to
+end. A reporting layer was added first: `reindex-hook.mjs` named the links that were not
+reciprocated, in the same turn they were written.
 
-It never writes the backlink for you: which note deserves one is a decision, so the hook only
-reports. The rule is deliberately narrow (`lib.mjs` → `oneWayLinks`):
+**Reporting turned out to be the wrong layer.** A later audit of a live vault — while that
+reporting layer was working exactly as designed — found 27 dead wikilinks and 37 notes owed a
+backlink. Seeing the message and acting on it depended on the model behaving in that same turn,
+and it did not. Both jobs are mechanical, so both are now done, not announced:
+
+- **dead wikilinks.** Obsidian resolves `[[target]]` by **filename**, not by the note's
+  frontmatter `name:` slug, and the two diverge in a large share of notes (files `snake_case`,
+  slugs `kebab-case`) — while the harness memory instruction tells every session to link by slug.
+  A link written *correctly per the instruction* is therefore born dead. The hook rewrites it to
+  the filename form when exactly **one** candidate matches.
+- **missing backlinks.** The hook appends the source to the target's trailing `İlgili:`
+  ("related") line, creating the line if absent. Frontmatter is never touched and the write is
+  idempotent.
+
+What stays manual is everything that needs judgment. The rule is deliberately narrow
+(`lib.mjs` → `oneWayLinks`, `repairLinksInText`):
 
 - **project↔project pairs only.** `reference` / `feedback` / `user` notes are hubs by design —
   dozens of project notes point at one reference note, and expecting it to point back at all of
   them is nonsense.
-- **resolvable targets only.** `[[note-not-written-yet]]` is a to-do marker, not an error — the
-  same contract `fixlinks.mjs` honours.
+- **resolvable targets only.** `[[note-not-written-yet]]` is a to-do marker, not an error.
+- **single candidate only.** If two files could match, which one was meant is semantic — left
+  alone. Same for a link whose target does not exist at all.
 - comparison ignores filename ↔ slug differences (`project_x_y.md` matches `[[project-x-y]]`).
 
 Counting every link as symmetric flagged 179 notes in a real vault of ~300; the narrow rule cut
 that to 94 and emits 0–2 lines per write. Three layers, mirroring how indexing works:
 
-1. `PostToolUse` (both the Claude and the Codex hook) reports at write time,
-2. `SessionStart` (`brief.mjs`) shows what is left per leaf — notes edited by hand in Obsidian
-   fire no hook at all, and this is the only thing that catches those,
-3. `bin/scripts/backlink.mjs --apply` closes the accumulated backlog in one pass: it appends the
-   source to the target's trailing `İlgili:` ("related") line, creating the line if absent. It
-   never touches frontmatter, it is idempotent, and every file it writes is listed in
-   `bin/state/backlink-<timestamp>.log` — the vault is not a git repo, so that log is the undo
-   record.
+1. `PostToolUse` (both the Claude and the Codex hook) repairs at write time,
+2. `SessionStart` (`brief.mjs`) sweeps the whole workspace — notes edited by hand in Obsidian
+   fire no hook at all, and this is the only thing that catches those. It prints one line if it
+   did something and stays silent otherwise, because `SessionStart` stdout is context budget,
+3. `bin/scripts/backlink.mjs --apply` and `fixlinks.mjs --apply` remain the bulk arms, covering
+   the entire vault (archive and docs included) in one pass. Every file a backlink run writes is
+   listed in `bin/state/backlink-*.log`, which is the undo record.
 
-Tests: `node bin/tests/onewaylinks.test.mjs` and `node bin/tests/backlink.test.mjs`.
+Tests: `node bin/tests/selfheal.test.mjs` (24 cases pinning both sides of the boundary — what it
+fixes and what it must not touch), plus `onewaylinks.test.mjs` and `backlink.test.mjs`.
 
 ## What an inbox capture records
 
@@ -209,6 +224,7 @@ $N ~/Obsidian/brain/bin/scripts/prune.mjs --apply     # archive leaves whose rep
 $N ~/Obsidian/brain/bin/scripts/archive.mjs personal/_kok/old_note.md
 $N ~/Obsidian/brain/bin/scripts/fixlinks.mjs          # repair mechanical [[wikilink]] mismatches
 $N ~/Obsidian/brain/bin/scripts/backlink.mjs          # report one-way project↔project links
+$N ~/Obsidian/brain/bin/tests/selfheal.test.mjs       # boundary tests for the self-healing layer
 $N ~/Obsidian/brain/bin/scripts/backlink.mjs --apply  # write the missing backlinks (idempotent)
 $N ~/Obsidian/brain/bin/scripts/unmigrate.mjs         # full undo plan (--apply to execute)
 ```

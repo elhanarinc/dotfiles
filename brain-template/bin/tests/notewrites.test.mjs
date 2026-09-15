@@ -12,7 +12,7 @@
 //
 // SINIR: sadece SHELL yazımları görülür. python/node script'inin içinden writeFileSync ile
 // yazılan not görünmez — o katmanı okumak shell ayrıştırmasından çok daha pahalı ve kırılgan.
-import { noteWritesFromCommand } from '../scripts/lib.mjs';
+import { noteWritesFromCommand, resolveNotePath, noteWriteLeaves, VAULT, WORKSPACES, WS_ROOTS } from '../scripts/lib.mjs';
 
 const HOME = process.env.HOME;
 let pass = 0;
@@ -58,6 +58,35 @@ eq('rm yazma değildir', noteWritesFromCommand(`rm ${V}/not.md`), []);
 eq('sed -i olmadan yazma yok', noteWritesFromCommand(`sed -n '1,5p' ${V}/not.md`), []);
 eq('boş komut', noteWritesFromCommand(''), []);
 eq('null komut', noteWritesFromCommand(null), []);
+
+
+// --- resolveNotePath / noteWriteLeaves: İKİ TABANLI çözüm ----------------------
+// NEDEN: baskın yazma biçimi `cd ~/Obsidian/brain && cat > personal/_kok/not.md`, ama
+// hook'a gelen cwd OTURUMUN cwd'sidir (compound komutun İÇİNDEKİ cd değil). Tek tabanla
+// (yalnız cwd) bu biçim sessizce çözülmez ve reindex hook'u hiçbir iş yapmaz — düzeltme
+// "uygulanmış" görünürken çalışmaz. Sahada tam bu şekilde yakalandı.
+// İş alanı adı ve kökü MAKİNEYE ÖZGÜ (bin/state/config.json) — teste gömülmez, oradan okunur.
+const WS = WORKSPACES[0];
+const SESSION_CWD = WS_ROOTS.find(([, name]) => name === WS)?.[0] ?? HOME;
+const KOK = `${VAULT}/${WS}/_kok`;
+// leafForFile yalnız DİZİNİ realpath eder, dosyanın var olması gerekmez — bu yüzden
+// sabit sentetik bir ad kullanılıyor. Gerçek bir nota bağlamak testi kırılgan yapardı:
+// not arşivlenir/yeniden adlandırılırsa üç assert alakasız bir sebeple düşer.
+const REAL = 'zz-notewrites-fixture.md';
+
+eq('mutlak vault yolu çözülür', resolveNotePath(`${KOK}/${REAL}`, SESSION_CWD), `${KOK}/${REAL}`);
+eq('göreli yol VAULT tabanından çözülür (cwd yanlışken)',
+  resolveNotePath(`personal/_kok/${REAL}`, SESSION_CWD), `${KOK}/${REAL}`);
+eq('vault dışı göreli yol null döner', resolveNotePath('src/app.md', SESSION_CWD), null);
+eq('vault dışı mutlak yol null döner', resolveNotePath('/tmp/x.md', SESSION_CWD), null);
+eq('boş girdi null döner', resolveNotePath('', SESSION_CWD), null);
+
+eq('cd + göreli heredoc yazımı leafe çözülür',
+  noteWriteLeaves(`cd ~/Obsidian/brain && cat > ${WS}/_kok/${REAL} <<'E'`, SESSION_CWD).map((w) => w.file),
+  [REAL]);
+eq('MEMORY.md leaf listesine girmez (üretilen dosya)',
+  noteWriteLeaves(`cd ~/Obsidian/brain && cat > ${WS}/_kok/MEMORY.md <<'E'`, SESSION_CWD), []);
+eq('proje dosyası yazımı brain işi değil', noteWriteLeaves('cat > README.md <<E', SESSION_CWD), []);
 
 console.log(`\n${pass}/${pass + fails.length} PASS`
   + (fails.length ? `\nFAIL: ${fails.join('; ')}` : ''));

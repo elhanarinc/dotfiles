@@ -1,5 +1,5 @@
-import { readFileSync, readdirSync, statSync, lstatSync, readlinkSync, writeFileSync, renameSync, existsSync, realpathSync } from 'node:fs';
-import { join, dirname, basename } from 'node:path';
+import { readFileSync, readdirSync, statSync, lstatSync, readlinkSync, writeFileSync, appendFileSync, renameSync, existsSync, realpathSync } from 'node:fs';
+import { join, dirname, basename, isAbsolute, resolve } from 'node:path';
 
 export const VAULT = join(process.env.HOME, 'Obsidian', 'brain');
 export const TASK_DIR = join(VAULT, 'bin', 'state', 'tasks');
@@ -410,10 +410,11 @@ const linksIn = (text) =>
 // ile aynı sözleşme: onlar "yazılacak" işareti, hata değil.
 //
 // SADECE project↔project çiftleri sayılır. `reference`/`feedback`/`user` notları tasarım
-// gereği hub: onlarca proje notu tek bir `[[reference_...]]` notuna link verir ve o notun
-// hepsine geri link vermesi saçma olur. Vault'ta tüm linkleri simetrik sayan bir kural 179 notu işaretliyor
+// gereği hub: onlarca proje notu tek bir `[[feedback_...]]` kuralına link verir ve o notun hepsine geri
+// link vermesi saçma olur. Vault'ta tüm linkleri simetrik sayan bir kural 179 notu işaretliyor
 // (ölçüldü) — yani her yazmada ateşleyip görmezden gelinen bir uyarı olurdu. Kaçırılan gerçek
-// vaka aynı hatayı anlatan iki KARDEŞ proje notu arasındaki bağdı, kural da onu hedefliyor.
+// vaka aynı defect desenini anlatan iki KARDEŞ proje notu arasındaki bağdı,
+// kural da onu hedefliyor.
 export function oneWayLinks(dir, file, notes = loadNotes(dir)) {
   const self = notes.find((n) => n.file === file);
   if (!self || self.type !== 'project') return [];
@@ -545,6 +546,43 @@ export function noteWritesFromCommand(command) {
 }
 
 // ---------------------------------------------------------------------------
+// Bir shell komutunun yazdığı notları LEAF'lere çöz. `noteWritesFromCommand` ham metni
+// verir (`personal/_kok/not.md` gibi göreli olabilir); burası onu diskteki bir leaf'e bağlar.
+//
+// İKİ TABAN denenir — cwd VE vault kökü. NEDEN: bu makinedeki baskın yazma biçimi
+// `cd ~/Obsidian/brain && cat > <ws>/_kok/not.md <<EOF`, ama harness hook'a OTURUMUN
+// cwd'sini bildirir, compound komutun İÇİNDEKİ `cd`'yi değil. Tek tabanla (cwd) bu biçim
+// `<proje-kökü>/<ws>/_kok/not.md`'ye çözülür, realpath patlar ve hook sessizce
+// hiçbir iş yapmaz — yani düzeltme "uygulanmış" görünürken çalışmaz. Yanlış taban null
+// döndürdüğü için iki tabanı denemenin yanlış pozitif riski yok.
+export function resolveNotePath(raw, cwd) {
+  const clean = String(raw ?? '').trim().replace(/^['"`]|['"`]$/g, '');
+  if (!clean) return null;
+  const p = clean.startsWith('~/') ? join(process.env.HOME, clean.slice(2)) : clean;
+  if (isAbsolute(p)) return leafForFile(p) ? p : null;
+  for (const base of [cwd, VAULT]) {
+    if (!base) continue;
+    const cand = resolve(base, p);
+    if (leafForFile(cand)) return cand;
+  }
+  return null;
+}
+
+// Komut → [{ dir, file }] (yalnız vault'taki non-index notlar, tekilleştirilmiş).
+export function noteWriteLeaves(command, cwd) {
+  const out = [];
+  for (const raw of noteWritesFromCommand(command)) {
+    const path = resolveNotePath(raw, cwd);
+    if (!path) continue;
+    const leaf = leafForFile(path);
+    if (!leaf || leaf.isIndex) continue;
+    const file = basename(path);
+    if (!out.some((o) => o.dir === leaf.dir && o.file === file)) out.push({ dir: leaf.dir, file });
+  }
+  return out;
+}
+
+// ---------------------------------------------------------------------------
 // Transcript taraması. capture.mjs'in yereliydi; nudge.mjs de AYNI cevaba ihtiyaç duyduğu
 // için buraya taşındı — iki kopya tutmak, bu sistemin tekrar tekrar kırıldığı desenin
 // kendisi olurdu. Tek geçişte: kullanıcı promptları + yazılan proje dosyaları + yazılan
@@ -590,7 +628,13 @@ export function scanTranscript(transcriptPath, cwd) {
           // bu makinede notlar çoğu zaman Bash heredoc ile yazılıyor, yani yanlış negatif
           // VARSAYILANDI. Bilinçli asimetri: Bash tespiti yalnız `notes`u besler, `touched`ı
           // beslemez — `touched`ın sözleşmesi "araçla düzenlenen proje dosyaları".
-          for (const p of noteWritesFromCommand(cmd)) noteFromPath(p);
+          // resolveNotePath ŞART: noteWritesFromCommand HAM yolu döndürür ve baskın biçim
+          // `cd ~/Obsidian/brain && cat > personal/_kok/not.md` — yani GÖRELİ. isVaultPath
+          // göreli yola false der, not sessizce düşerdi: capture.mjs'in `notes:` alanı boş
+          // kalır ve nudge.mjs "hiç not yazılmadı" diye YANLIŞ POZİTİF dürtü atardı.
+          // 2026-09-11'de sistem bunu kendi üzerinde gösterdi: aynı oturumda 4 not yazılmışken
+          // nudge yine de ateşledi. reindex-hook'ta kapatılan deliğin bu tüketicideki hâliydi.
+          for (const p of noteWritesFromCommand(cmd)) noteFromPath(resolveNotePath(p, cwd) ?? p);
           continue;
         }
         if (!EDIT_TOOLS.has(b.name)) continue;
@@ -729,4 +773,186 @@ export function searchNotes(query, sources = [], { type = null } = {}) {
     }
   }
   return rows.sort((a, b) => b.score - a.score || b.matched - a.matched || a.file.localeCompare(b.file));
+}
+
+// ---------------------------------------------------------------------------
+// ÖZ ONARIM KATMANI
+//
+// NEDEN VAR: bir denetimde vault'ta 27 ölü wikilink + 37 notluk geri link borcu + iş alanı
+// içinde bağlanmamış 3 proje bulundu. Üçü de "tespit edilmiş ama düzeltilmemiş" sınıfındaydı:
+// fixlinks/backlink/verify sorunu GÖRÜYOR, düzeltmeyi ELLE beklemek zorundaydı. Kullanıcının
+// şikayeti tam buydu — her seferinde elle "düzelt" demek zorunda kalmak. Bu yüzden mekanik olan
+// kısım artık yazma anında (PostToolUse) ve oturum açılışında (SessionStart) kendiliğinden
+// kapanıyor; semantik olan kısım (inbox küratörlüğü, notu-olan yetim klasör) hâlâ bildirimde.
+//
+// SINIR — neyin otomatiği güvenli: yalnız TEK ADAYLI mekanik eşleşme. Belirsiz ya da hedefi
+// hiç olmayan link kasıtlı bırakılır (`[[henuz-yazilmamis-not]]` "yazılacak" işaretidir).
+
+// Vault'taki tüm not DOSYA ADLARININ normalize indeksi: linkKey → Set(gerçek dosya adı).
+// Obsidian `[[hedef]]`'i DOSYA ADIYLA çözer, frontmatter `name:` slug'ıyla değil; vault'ta
+// notların önemli bir kısmında ikisi farklı (dosya snake_case, slug kebab-case) ve harness'ın
+// hafıza talimatı "slug ile bağla" diyor — yani kurala uyan link Obsidian'da ölü doğuyor.
+export function linkTargetIndex() {
+  const byKey = new Map();
+  const walk = (d) => {
+    let entries;
+    try { entries = readdirSync(d, { withFileTypes: true }); } catch { return; }
+    for (const e of entries) {
+      if (e.name.startsWith('.')) continue;
+      if (e.isDirectory()) { walk(join(d, e.name)); continue; }
+      if (!e.name.endsWith('.md')) continue;
+      const base = e.name.replace(/\.md$/, '');
+      const k = linkKey(base);
+      if (!byKey.has(k)) byKey.set(k, new Set());
+      byKey.get(k).add(base);
+    }
+  };
+  walk(VAULT);
+  return byKey;
+}
+
+// Metindeki mekanik link uyuşmazlıklarını düzeltir (tire↔alt çizgi, büyük/küçük harf, .md).
+// Dönen: { text, fixed: [{from,to}], unresolved: [ad], scanned }
+export function repairLinksInText(text, index) {
+  const fixed = [];
+  const unresolved = [];
+  let scanned = 0;
+  const out = text.replace(/\[\[([^\]|#]+)([^\]]*)\]\]/g, (whole, target, rest) => {
+    scanned += 1;
+    const t = target.trim();
+    const base = t.replace(/\.md$/, '');
+    const cands = index.get(linkKey(base));
+    if (cands?.has(base)) return whole;              // zaten birebir dosya adı
+    if (!cands) { unresolved.push(t); return whole; } // hedefi yok → kasıtlı bırak
+    if (cands.size !== 1) return whole;              // belirsiz → dokunma
+    const to = [...cands][0];
+    fixed.push({ from: t, to });
+    return `[[${to}${rest}]]`;
+  });
+  return { text: out, fixed, unresolved, scanned };
+}
+
+// Verilen not dosyalarını yerinde onarır ve DOKUNULAN LEAF'İN İNDEKSİNİ EŞİTLER.
+// İndeks eşitlemesi burada olmak zorunda: çağıran tarafa bırakılırsa "link onarıldı ama
+// MEMORY.md bayat kaldı" diye eski arızanın yerine yenisi konur.
+export function repairLinkFiles(paths, index = linkTargetIndex()) {
+  const repaired = [];
+  const dirs = new Set();
+  for (const p of paths) {
+    let text;
+    try { text = readFileSync(p, 'utf8'); } catch { continue; }
+    const r = repairLinksInText(text, index);
+    if (!r.fixed.length) continue;
+    atomicWrite(p, r.text);
+    for (const f of r.fixed) repaired.push({ file: basename(p), ...f });
+    const leaf = leafForFile(p);
+    if (leaf) dirs.add(leaf.dir);
+  }
+  if (dirs.size) syncIndexes({ only: [...dirs] });
+  return repaired;
+}
+
+// A'ya giden linki B'nin gövdesine ekler. Frontmatter'ın dışında kalması şart: notun
+// sonundaki `İlgili:` satırı varsa ona eklenir, yoksa dosyanın sonuna yeni satır açılır.
+// (backlink.mjs'ten buraya taşındı — artık üç tüketicisi var: CLI, PostToolUse
+// hook'u ve SessionStart süpürmesi. backlink.mjs onu yeniden dışa aktarıyor, testi bozulmasın.)
+const RELATED = 'İlgili:';
+export function withBacklink(text, targetName) {
+  const link = `[[${targetName}]]`;
+  const lines = text.replace(/\s+$/, '').split('\n');
+  const idx = lines.findLastIndex((l) => l.trimStart().startsWith(RELATED));
+
+  if (idx >= 0) {
+    if (lines[idx].includes(link)) return `${lines.join('\n')}\n`;
+    lines[idx] = `${lines[idx].replace(/[.\s]+$/, '')}, ${link}`;
+    return `${lines.join('\n')}\n`;
+  }
+  return `${lines.join('\n')}\n\n${RELATED} ${link}\n`;
+}
+
+// Tek yönlü project↔project linkleri için yazılacak geri link planı.
+// `sources` verilirse yalnız o notlar KAYNAK sayılır (yazma anı yolu); verilmezse leaf'in
+// tamamı taranır (süpürme yolu).
+export function backlinkPlan(leaves = listLeafDirs(), sources = null) {
+  const changes = [];
+  for (const leaf of leaves) {
+    const notes = loadNotes(leaf.dir);
+    const byFile = new Map(notes.map((n) => [n.file, n]));
+    for (const source of notes) {
+      if (source.status === 'archived') continue;
+      if (sources && !sources.includes(source.file)) continue;
+      for (const targetFile of oneWayLinks(leaf.dir, source.file, notes)) {
+        const target = byFile.get(targetFile);
+        if (!target || target.status === 'archived') continue;
+        changes.push({
+          dir: leaf.dir,
+          target: targetFile,
+          path: join(leaf.dir, targetFile),
+          sourceName: source.file.replace(/\.md$/, ''),
+        });
+      }
+    }
+  }
+  return changes;
+}
+
+// Aynı hedefe birden çok kaynak gelebilir; tek okuma-yazma turunda birleştir.
+export function groupBacklinks(changes) {
+  const byTarget = new Map();
+  for (const c of changes) {
+    if (!byTarget.has(c.path)) byTarget.set(c.path, { ...c, sources: [] });
+    byTarget.get(c.path).sources.push(c.sourceName);
+  }
+  return byTarget;
+}
+
+// Planı diske yazar + indeksi eşitler + ne yazdığını loglar (git altında olsa bile commit'ler
+// seyrek; ÇALIŞMA bazında geri alma kaydı bu log). Dönen: gruplanmış harita.
+export function applyBacklinks(changes, { log = null, append = false } = {}) {
+  const byTarget = groupBacklinks(changes);
+  if (!byTarget.size) return byTarget;
+
+  const touchedDirs = new Set();
+  for (const { path, sources, dir } of byTarget.values()) {
+    let text;
+    try { text = readFileSync(path, 'utf8'); } catch { continue; }
+    for (const name of sources) text = withBacklink(text, name);
+    atomicWrite(path, text);
+    touchedDirs.add(dir);
+  }
+  if (log) {
+    const rel = (p) => p.replace(`${VAULT}/`, '');
+    const body = [...byTarget.values()]
+      .map(({ path, sources }) => `${new Date().toISOString()} ${rel(path)} <- ${sources.join(', ')}`)
+      .join('\n');
+    if (append) appendFileSync(log, `${body}\n`);
+    else atomicWrite(log, `${body}\n`);
+  }
+  if (touchedDirs.size) syncIndexes({ only: [...touchedDirs] });
+  return byTarget;
+}
+
+// Bir iş alanı kökünün İÇİNDE olup vault'a bağlanmamış harness memory klasörleri.
+// O dizinde açılan oturum BOŞ hafıza yükler ve orada yazılan not vault'a hiç girmez.
+// `notes: 0` olanlar güvenle otomatik bağlanabilir (taşınacak dosya yok); notu OLANLAR
+// (yetim hafıza) bilinçli olarak otomatiğin dışında — dosya taşıma çakışma üretebilir,
+// o karar kullanıcının. Kapsam dışı boş klasörler (ör. ~/Desktop) zararsızdır, dönmez.
+export function unlinkedProjects() {
+  const out = [];
+  let names;
+  try { names = readdirSync(PROJECTS_DIR).sort(); } catch { return out; }
+  for (const name of names) {
+    const memPath = join(PROJECTS_DIR, name, 'memory');
+    let st;
+    try { st = lstatSync(memPath); } catch { continue; }
+    if (st.isSymbolicLink()) continue;
+    let files = [];
+    try { files = readdirSync(memPath).filter((f) => f !== '.DS_Store'); } catch { continue; }
+    const real = resolveRealPath(name);
+    if (!real) continue;
+    const ws = workspaceForCwd(real);
+    if (!ws) continue;
+    out.push({ harnessDir: join(PROJECTS_DIR, name), memPath, real, ws, notes: files.length });
+  }
+  return out;
 }

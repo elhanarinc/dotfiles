@@ -8,7 +8,7 @@
 //
 // Kullanım:
 //   node reindex.mjs                  → hepsini eşitle
-//   node reindex.mjs personal appsm   → sadece bu iş alanları
+//   node reindex.mjs <ws-a> <ws-b>    → sadece bu iş alanları
 //   node reindex.mjs --check          → hiçbir şey yazma, bayat indeks varsa exit 1
 import { join } from 'node:path';
 import { buildIndex, listLeafDirs, loadNotes, syncIndexes, VAULT } from './lib.mjs';

@@ -2,7 +2,7 @@
 // nested apply_patch yollarını çözer; yalnız vault'taki non-index Markdown notlarını eşitler.
 import { basename, isAbsolute, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { contextForCwd, leafForFile, oneWayLinks, readHookInput, syncIndexes } from './lib.mjs';
+import { applyBacklinks, backlinkPlan, contextForCwd, leafForFile, noteWritesFromCommand, readHookInput, repairLinkFiles, syncIndexes, VAULT } from './lib.mjs';
 
 const strings = (value, out = []) => {
   if (typeof value === 'string') out.push(value);
@@ -29,6 +29,13 @@ const candidatesFromInput = (input) => {
   const found = new Set(keyedPaths(input?.tool_input));
   for (const raw of strings(input?.tool_input)) {
     const text = raw.replace(/\\r\\n|\\n|\\r/g, '\n');
+
+    // Codex exec'i kabuktan geçer: `cat > not.md <<EOF`, `tee`, `sed -i` yazımları
+    // apply_patch işareti TAŞIMAZ ve 2026-09-11'e kadar buradan sessizce düşüyordu —
+    // Claude tarafındaki `Write|Edit` matcher deliğinin Codex'teki karşılığı.
+    // Tespit gene lib.mjs'te tek yerde.
+    for (const target of noteWritesFromCommand(text)) found.add(target);
+
     if (!/apply_patch|\*\*\* (?:Add|Update|Delete) File:/.test(text)) continue;
     for (const match of text.matchAll(PATCH_FILE)) found.add(match[1].trim());
     for (const match of text.matchAll(ABSOLUTE_MARKDOWN)) found.add(match[0]);
@@ -40,7 +47,14 @@ const normalizePath = (candidate, cwd) => {
   const clean = String(candidate || '').trim().replace(/^['"`]|['"`]$/g, '');
   if (!clean) return null;
   if (clean.startsWith('~/')) return join(process.env.HOME, clean.slice(2));
-  return isAbsolute(clean) ? clean : resolve(cwd || process.cwd(), clean);
+  if (isAbsolute(clean)) return clean;
+  // İKİ TABAN: bildirilen cwd VE vault kökü. `cd <vault> && cat > <göreli>.md` biçiminde
+  // hook'a gelen cwd komutun içindeki cd'yi yansıtmaz; tek tabanla yol sessizce çözülmez.
+  for (const base of [cwd, VAULT].filter(Boolean)) {
+    const cand = resolve(base, clean);
+    if (leafForFile(cand)) return cand;
+  }
+  return resolve(cwd || process.cwd(), clean);
 };
 
 const main = async () => {
@@ -57,13 +71,21 @@ const main = async () => {
   }
   for (const dir of dirs) syncIndexes({ only: [dir] });
 
-  // Claude tarafındaki reindex-hook ile aynı sözleşme: karşılığı olmayan peer linkleri
-  // yazma anında söyle. İki hook ayrışırsa Codex'te yazılan notlar denetimsiz kalır.
-  const oneWay = [...new Set(written.flatMap(([dir, file]) => oneWayLinks(dir, file)))];
-  if (oneWay.length) {
-    process.stdout.write(
-      `brain: tek yönlü link — ${oneWay.slice(0, 5).join(', ')} notuna geri link yok.\n`,
-    );
+  // Claude tarafındaki reindex-hook ile aynı sözleşme: ölü linki ONAR, eksik geri linki YAZ.
+  // İki hook ayrışırsa Codex'te yazılan notlar denetimsiz kalır — bir denetimde bildirim
+  // katmanı ikisinde de çalışırken 27 ölü link + 37 notluk borç birikmişti, o yüzden burada
+  // da bildirim değil düzeltme var. Sınır aynı: yalnız tek adaylı mekanik eşleşme.
+  const repaired = repairLinkFiles(written.map(([dir, file]) => join(dir, file)));
+  if (repaired.length) {
+    process.stdout.write(`brain: ${repaired.length} ölü link dosya adına göre onarıldı (otomatik).\n`);
+  }
+
+  const plan = [...dirs].flatMap((dir) =>
+    backlinkPlan([{ dir }], written.filter(([d]) => d === dir).map(([, file]) => file)));
+  const done = applyBacklinks(plan, { log: join(VAULT, 'bin', 'state', 'backlink-auto.log'), append: true });
+  if (done.size) {
+    const names = [...done.values()].map((d) => d.target.replace(/\.md$/, ''));
+    process.stdout.write(`brain: ${done.size} nota geri link yazıldı (otomatik): ${names.slice(0, 5).join(', ')}\n`);
   }
 };
 

@@ -6,11 +6,16 @@
 // yalnızca TEK bir aday varsa yazar. Hedefi gerçekten olmayan linkler (henüz yazılmamış not)
 // KASITLI bırakılır — onlar "yazılacak" işaretidir, hata değil.
 //
+// Onarım mantığı lib.mjs'e taşındı (`repairLinksInText`), çünkü artık üç
+// tüketicisi var — bu CLI, PostToolUse hook'u ve SessionStart süpürmesi. Bu script birikmişi
+// TÜM vault'ta (arşiv + inbox + docs dahil) kapatan toplu koldur; hook'lar yalnız leaf
+// notlarına bakar.
+//
 //   node bin/scripts/fixlinks.mjs          → sadece rapor
 //   node bin/scripts/fixlinks.mjs --apply  → düzeltmeleri yaz
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { VAULT, syncIndexes } from './lib.mjs';
+import { VAULT, linkTargetIndex, repairLinksInText, syncIndexes } from './lib.mjs';
 
 const apply = process.argv.includes('--apply');
 
@@ -25,38 +30,17 @@ const walk = (d) => {
 };
 walk(VAULT);
 
-// Aranabilir ad indeksi: dosya adı (uzantısız) → gerçek ad. Anahtar normalize edilmiş.
-const key = (s) => s.toLowerCase().replace(/\.md$/, '').replace(/[-_\s]/g, '');
-const byKey = new Map();
-for (const p of mdFiles) {
-  const base = p.split('/').pop().replace(/\.md$/, '');
-  const k = key(base);
-  if (!byKey.has(k)) byKey.set(k, new Set());
-  byKey.get(k).add(base);
-}
-
+const index = linkTargetIndex();
 let scanned = 0, fixed = 0;
 const unresolved = [];
 
 for (const p of mdFiles) {
   const text = readFileSync(p, 'utf8');
-  let out = text;
-  // [[hedef]] ve [[hedef|görünen]] — başlık çapası (#) korunur
-  out = out.replace(/\[\[([^\]|#]+)([^\]]*)\]\]/g, (whole, target, rest) => {
-    scanned++;
-    const t = target.trim();
-    const base = t.replace(/\.md$/, '');
-    // Zaten birebir bir dosya adıysa dokunma
-    if (byKey.get(key(base))?.has(base)) return whole;
-    const cands = byKey.get(key(base));
-    if (!cands || cands.size !== 1) {
-      if (!cands) unresolved.push(`${p.replace(`${VAULT}/`, '')}  →  [[${t}]]`);
-      return whole;
-    }
-    fixed++;
-    return `[[${[...cands][0]}${rest}]]`;
-  });
-  if (out !== text && apply) writeFileSync(p, out);
+  const r = repairLinksInText(text, index);
+  scanned += r.scanned;
+  fixed += r.fixed.length;
+  for (const u of r.unresolved) unresolved.push(`${p.replace(`${VAULT}/`, '')}  →  [[${u}]]`);
+  if (r.fixed.length && apply) writeFileSync(p, r.text);
 }
 
 console.log(`${mdFiles.length} dosya · ${scanned} wikilink`);

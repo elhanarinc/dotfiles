@@ -1,7 +1,7 @@
 {
   "workspaces": [
-    { "name": "personal", "root": "~/Desktop/personal-projects" },
-    { "name": "work", "root": "~/Desktop/work-projects" },
+    { "name": "personal", "root": "~/code/personal" },
+    { "name": "work", "root": "~/code/work" },
     { "name": "other" }
   ]
 }

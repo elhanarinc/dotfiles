@@ -4,9 +4,15 @@
 // Asla patlamaz, asla yavaşlamaz: her hata sessizce yutulur, exit 0.
 import { readFileSync, readdirSync, existsSync, statSync } from 'node:fs';
 import { join, basename } from 'node:path';
-import { VAULT, TASK_DIR, INBOX_DIR, readHookInput, workspaceForCwd, syncIndexes, parseFrontmatter, auditLeaves, listLeafDirs, oneWayLinksInLeaf } from './lib.mjs';
+import {
+  VAULT, TASK_DIR, INBOX_DIR, readHookInput, workspaceForCwd, syncIndexes, parseFrontmatter,
+  auditLeaves, listLeafDirs, loadNotes, repairLinkFiles, backlinkPlan, applyBacklinks,
+  unlinkedProjects,
+} from './lib.mjs';
+import { linkLeaf } from './link-leaf.mjs';
 
 const LIMIT = 8000;
+const AUTO_LOG = join(VAULT, 'bin', 'state', 'backlink-auto.log');
 
 const main = async () => {
   const input = await readHookInput();
@@ -79,7 +85,7 @@ const main = async () => {
 
   // --- bu iş alanının DİĞER hafıza klasörleri ---
   // Harness yalnızca cwd'nin kendi MEMORY.md'sini yükler. Kökte çalışırken alt projelerin
-  // (ör. packrip-ios 64 not) hafızası görünmez; VAR OLDUĞUNU bilmezsem okumayı da denemem.
+  // (ör. yoğun bir leaf'in 64 notu) hafızası görünmez; VAR OLDUĞUNU bilmezsem okumayı da denemem.
   // Bu satır o körlüğü kapatıyor: nerede olduklarını ve nasıl okunacağını söyler.
   try {
     // DİKKAT: leaf'in vault yolu (brain/personal/_kok) asla cwd'ye eşit olmaz — karşılaştırılacak
@@ -94,24 +100,45 @@ const main = async () => {
     }
   } catch { /* körlük uyarısı verilemese bile brief çıksın */ }
 
-  // --- tek yönlü link borcu ---
+  // --- öz onarım: mekanik olanı BİLDİRMEK yerine KAPAT ---
   // PostToolUse hook'u yalnız AJANIN yazdığı notta ateşleniyor; Obsidian'da elle düzenlenen
-  // ya da başka bir yoldan gelen notların asimetrisi hiçbir yerde görünmüyordu. Borç 2026-08-12'de
-  // sıfırlandı (bin/scripts/backlink.mjs), bu satır yeniden sessizce birikmesini engelliyor.
-  // Leaf başına ~3ms; açılışın 400ms bütçesinde sorun değil.
+  // ya da başka yoldan gelen notların ölü linki/asimetrisi hiçbir yerde görünmüyordu. Borç
+  // 2026-08-12'de bir kez sıfırlandı, buraya da bir SAYAÇ kondu — ama sayaç kapatmıyor:
+  // 2026-09-15 denetiminde yine 27 ölü link + 37 notluk borç birikmiş bulundu ve kullanıcı
+  // haklı olarak "durup durup düzelt demek istemiyorum" dedi. Artık aynı tarama düzeltmeyi
+  // de yazıyor; basılan şey borç değil YAPILAN İŞ, ve iş yoksa hiçbir satır basılmıyor
+  // (SessionStart stdout'u context bütçesi — boş gürültü oraya giremez).
+  // Maliyet: iş alanının notlarını bir kez okumak + vault link indeksi; ölçülen ~250ms.
   try {
-    const debt = listLeafDirs()
-      .filter((l) => l.ws === ws)
-      .map((l) => ({ label: l.label, n: oneWayLinksInLeaf(l.dir).length }))
-      .filter((r) => r.n);
-    if (debt.length) {
-      out.push(
-        '',
-        `### tek yönlü link: ${debt.map((d) => `${d.label}(${d.n})`).join(', ')}`,
-        'Karşılığı olmayan peer link var. Kapatmak için: `node ~/Obsidian/brain/bin/scripts/backlink.mjs --apply`',
-      );
+    const leaves = listLeafDirs().filter((l) => l.ws === ws);
+    const repaired = repairLinkFiles(leaves.flatMap((l) => loadNotes(l.dir).map((n) => join(l.dir, n.file))));
+    const linked = applyBacklinks(backlinkPlan(leaves), { log: AUTO_LOG, append: true });
+    const did = [
+      repaired.length ? `${repaired.length} ölü link onarıldı` : null,
+      linked.size ? `${linked.size} nota geri link yazıldı` : null,
+    ].filter(Boolean);
+    if (did.length) {
+      out.push('', `### brain öz onarım (otomatik): ${did.join(' · ')}`);
+      out.push('Bilinçli tek yönlü bir link ezildiyse ilgili notun `İlgili:` satırından çıkar.');
     }
-  } catch { /* link borcu sayılamasa bile brief çıksın */ }
+  } catch { /* onarım yapılamasa bile brief çıksın */ }
+
+  // --- iş alanı içinde bağlanmamış BOŞ proje: bağla ---
+  // Harness her cwd için boş bir memory/ açar. Kapsam dışındaysa zararsız, ama bir iş alanı
+  // kökünün İÇİNDEYSE bu bağlanmamış gerçek bir projedir: o dizinde açılan oturum boş hafıza
+  // yükler ve orada yazılan not vault'a hiç girmez (bir denetimde 3 tane bulundu, biri
+  // haftalardır sessizce boş kalmış gerçek bir proje). Yalnız BOŞ olanı bağlıyoruz:
+  // notu olan yetim klasör dosya taşımak demek, çakışma üretebilir, o karar kullanıcının.
+  try {
+    const linkedLeaves = [];
+    for (const p of unlinkedProjects()) {
+      if (p.ws !== ws || p.notes) continue;
+      try { linkedLeaves.push(linkLeaf(p.ws, p.real).leaf); } catch { /* çakışma → verify bildirir */ }
+    }
+    if (linkedLeaves.length) {
+      out.push('', `### brain: ${linkedLeaves.length} bağlanmamış proje vault'a bağlandı — ${linkedLeaves.join(', ')}`);
+    }
+  } catch { /* bağlanamasa bile brief çıksın */ }
 
   if (!out.length) return;
 
