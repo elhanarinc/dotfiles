@@ -555,12 +555,27 @@ export function noteWritesFromCommand(command) {
 // `<proje-kökü>/<ws>/_kok/not.md`'ye çözülür, realpath patlar ve hook sessizce
 // hiçbir iş yapmaz — yani düzeltme "uygulanmış" görünürken çalışmaz. Yanlış taban null
 // döndürdüğü için iki tabanı denemenin yanlış pozitif riski yok.
-export function resolveNotePath(raw, cwd) {
+// Komutun BAŞINDAKİ `cd <hedef>`. ÜÇÜNCÜ taban bu: sistem bu deliği kendi
+// üzerinde gösterdi — `cd ~/Obsidian/brain/<ws>/<leaf> && cat > not.md <<EOF` ile yazılan
+// not hiçbir tabana çözülmedi (cwd oturumunki, VAULT kökü de değil) ve MEMORY.md bayat
+// kaldı. İki taban `cd <vault-kökü> && cat > <ws>/<leaf>/not.md` biçimini kurtarıyordu ama
+// leaf dizinine girip çıplak dosya adı yazan biçimi kurtarmıyordu; ikisi de yaygın.
+// Yalnız komutun BAŞINDAKİ cd sayılır: ortadaki `cd`'ler sıralı kabuk durumunu değiştirir,
+// onu doğru izlemek tam bir kabuk yorumlayıcısı ister — kapsam dışı, ve yanlış taban zaten
+// null döndürdüğü için yanlış pozitif riski yok.
+const cdBase = (command) => {
+  const m = /^\s*cd\s+(?:'([^']+)'|"([^"]+)"|([^\s;&|]+))/.exec(String(command ?? ''));
+  const raw = m && (m[1] ?? m[2] ?? m[3]);
+  if (!raw) return null;
+  return raw.startsWith('~/') ? join(process.env.HOME, raw.slice(2)) : raw;
+};
+
+export function resolveNotePath(raw, cwd, command = null) {
   const clean = String(raw ?? '').trim().replace(/^['"`]|['"`]$/g, '');
   if (!clean) return null;
   const p = clean.startsWith('~/') ? join(process.env.HOME, clean.slice(2)) : clean;
   if (isAbsolute(p)) return leafForFile(p) ? p : null;
-  for (const base of [cwd, VAULT]) {
+  for (const base of [cdBase(command), cwd, VAULT]) {
     if (!base) continue;
     const cand = resolve(base, p);
     if (leafForFile(cand)) return cand;
@@ -572,7 +587,7 @@ export function resolveNotePath(raw, cwd) {
 export function noteWriteLeaves(command, cwd) {
   const out = [];
   for (const raw of noteWritesFromCommand(command)) {
-    const path = resolveNotePath(raw, cwd);
+    const path = resolveNotePath(raw, cwd, command);
     if (!path) continue;
     const leaf = leafForFile(path);
     if (!leaf || leaf.isIndex) continue;
@@ -629,12 +644,14 @@ export function scanTranscript(transcriptPath, cwd) {
           // VARSAYILANDI. Bilinçli asimetri: Bash tespiti yalnız `notes`u besler, `touched`ı
           // beslemez — `touched`ın sözleşmesi "araçla düzenlenen proje dosyaları".
           // resolveNotePath ŞART: noteWritesFromCommand HAM yolu döndürür ve baskın biçim
-          // `cd ~/Obsidian/brain && cat > personal/_kok/not.md` — yani GÖRELİ. isVaultPath
+          // `cd ~/Obsidian/brain && cat > <ws>/_kok/not.md` — yani GÖRELİ. isVaultPath
           // göreli yola false der, not sessizce düşerdi: capture.mjs'in `notes:` alanı boş
           // kalır ve nudge.mjs "hiç not yazılmadı" diye YANLIŞ POZİTİF dürtü atardı.
-          // 2026-09-11'de sistem bunu kendi üzerinde gösterdi: aynı oturumda 4 not yazılmışken
+          // Sistem bunu kendi üzerinde gösterdi: aynı oturumda 4 not yazılmışken
           // nudge yine de ateşledi. reindex-hook'ta kapatılan deliğin bu tüketicideki hâliydi.
-          for (const p of noteWritesFromCommand(cmd)) noteFromPath(resolveNotePath(p, cwd) ?? p);
+          // `cmd` üçüncü argüman olarak ŞART: komutun başındaki `cd <leaf>` tabanı olmadan
+          // `cd <leaf-dizini> && cat > not.md` biçimi yine düşer — aynı deliğin üçüncü tüketicisi.
+          for (const p of noteWritesFromCommand(cmd)) noteFromPath(resolveNotePath(p, cwd, cmd) ?? p);
           continue;
         }
         if (!EDIT_TOOLS.has(b.name)) continue;
