@@ -2,15 +2,15 @@
 // `<is-alani>/<leaf>/` altına taşır ve yerine symlink bırakır. Yeni makinede ya da yeni
 // bir repo açıldığında YAPILACAK TEK İŞ budur.
 //
-//   node bin/scripts/link-leaf.mjs <is-alani> ~/code/yeni-repo
-//   node bin/scripts/link-leaf.mjs <is-alani> ~/code --as _kok
+//   node bin/scripts/link-leaf.mjs personal ~/Desktop/personal-projects/yeni-repo
+//   node bin/scripts/link-leaf.mjs personal ~/Desktop/personal-projects --as _kok
 //
 // NEDEN SYMLINK: harness yalnızca `~/.claude/projects/<dizin>/memory/MEMORY.md`'yi yükler.
 // Klasörü vault'a taşıyıp symlink bırakınca harness davranışı hiç değişmez, notlar
 // Obsidian'da görünür olur. `oneshot/migrate-workspaces.mjs` bunu toplu yapıyordu ama
 // harness dizin adından GERİYE doğru tahmin ediyordu; burada yön ileri, yani tahmin yok.
 //
-// Gövde `linkLeaf()` fonksiyonuna çıkarıldı ve hata yolu `process.exit` yerine
+// 2026-09-15: gövde `linkLeaf()` fonksiyonuna çıkarıldı ve hata yolu `process.exit` yerine
 // `throw` oldu. NEDEN: brief.mjs (SessionStart) bağlanmamış BOŞ projeleri artık kendi
 // bağlıyor; bir SessionStart hook'unun exit 1 ile düşmesi brief'i sessizce yok eder —
 // yani bu sistemin var olma sebebi olan arıza sınıfının aynısı olurdu.

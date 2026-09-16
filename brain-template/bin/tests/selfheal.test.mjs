@@ -1,6 +1,6 @@
 // Öz onarım katmanı testleri.  node bin/tests/selfheal.test.mjs
 //
-// NEDEN VAR: link onarımı ve geri link yazımı "bildir" katmanından "yaz"
+// NEDEN VAR: 2026-09-15'te link onarımı ve geri link yazımı "bildir" katmanından "yaz"
 // katmanına taşındı. Otomatik YAZAN bir kodun sınırı testle pinlenmek zorunda: sınır
 // kayarsa sistem kendi notlarını bozar, ki bu bildirimi kaçırmaktan çok daha pahalı.
 // Pinlenen sözleşme: yalnız TEK ADAYLI mekanik eşleşme düzeltilir; belirsiz olan,
@@ -9,7 +9,7 @@ import { writeFileSync, readFileSync, rmSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import {
   repairLinksInText, repairLinkFiles, backlinkPlan, groupBacklinks, applyBacklinks,
-  withBacklink, unlinkedProjects, linkTargetIndex,
+  withBacklink, unlinkedProjects, linkTargetIndex, maskCode,
 } from '../scripts/lib.mjs';
 
 const DIR = join(import.meta.dirname, 'tmp-selfheal');
@@ -51,6 +51,28 @@ eq('büyük/küçük harf farkı onarılır',
 eq('.md uzantısı onarılır',
   repairLinksInText('bkz [[project-a-b.md]]', one).text, 'bkz [[project_a_b]]');
 
+// KOD BLOĞU DOKUNULMAZ. 2026-09-16'da `functions/i/[[code]].ts` (Cloudflare Pages catch-all
+// DOSYA ADI) ölü wikilink sanıldı. Gürültüden ibaret değil: tek adaylı bir `code` notu var
+// olsaydı onarım o dosya adını sessizce yeniden yazardı — sessiz veri bozma.
+// İndeks BİLEREK öyle kuruldu ki maskeleme olmasa onarım TETİKLENİR: `co_de` ve `pa_th`
+// normalize edilince 'code'/'path' anahtarına düşüyor ve TEK aday oluyorlar. Yani bu testler
+// "aday yoktu, o yüzden dokunmadı" diye önemsiz sebeple geçemez — maskeleme kalkarsa DÜŞER.
+const codeIdx = index('co_de', 'pa_th', 'gercek_not');
+eq('KONTROL: maskeleme olmasa onarılırdı (aday gerçekten tek)',
+  repairLinksInText('metinde [[code]] var', codeIdx).text, 'metinde [[co_de]] var');
+eq('satır-içi koddaki [[x]] onarılmaz',
+  repairLinksInText('Route `functions/i/[[code]].ts` böyle.', codeIdx).text,
+  'Route `functions/i/[[code]].ts` böyle.');
+eq('fenced bloktaki [[x]] onarılmaz',
+  repairLinksInText('```\nls [[path]]/x\n```', codeIdx).text, '```\nls [[path]]/x\n```');
+eq('kod DIŞINDAKİ link yine onarılır',
+  repairLinksInText('bkz [[gercek-not]] notu', codeIdx).text, 'bkz [[gercek_not]] notu');
+eq('aynı satırda kod korunur, metin onarılır',
+  repairLinksInText('kod `[[code]]` ve metin [[gercek-not]]', codeIdx).text,
+  'kod `[[code]]` ve metin [[gercek_not]]');
+const round = 'a `b` c ```\nd\n``` e';
+eq('maskCode geri yüklemesi kayıpsız', maskCode(round).restore(maskCode(round).masked), round);
+
 // Görünen ad ve başlık çapası KORUNUR: `[[hedef|ad]]` ve `[[hedef#baslik]]` biçimini bozmak
 // notun okunabilirliğini sessizce mahveder.
 eq('görünen ad korunur',
@@ -68,7 +90,7 @@ eq('belirsiz aday varken dokunulmaz',
   repairLinksInText('bkz [[project a b]]', two).text, 'bkz [[project a b]]');
 
 // Shell parçası ya da kod içindeki `[[ ... ]]` yanlış pozitif üretmemeli: hedefi olmadığı
-// için zaten onarılmıyor (`[[-r "$PWD"]]` gibi örnekler gerçek vault'larda çıkıyor).
+// için zaten onarılmıyor (vault'ta `[[-r "$PWD"]]` gibi 4 örnek var).
 eq('shell testi wikilink sanılsa da bozulmaz',
   repairLinksInText('if [[-r "$PWD"]]; then', one).text, 'if [[-r "$PWD"]]; then');
 

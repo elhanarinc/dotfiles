@@ -129,6 +129,55 @@ w(LIVE, 'MEMORY.md', '- [x](x.md) — uretilmis indeks satiri kopya');
 w(LIVE, 'project_real.md', note('gercek', 'project', 'h', 'kopya'));
 eq('üretilmiş MEMORY.md sonuçlara girmez', files(searchNotes('kopya', live())), ['project_real.md']);
 
+// --- SIRALAMA SÖZLEŞMESİ (2026-09-16) -----------------------------------------
+// NEDEN VAR: bu dosyanın 21 testi, skorlamanın TAMAMI (alt-dize TF → BM25+IDF+kök+stopword)
+// değiştirildiği hâlde geçti. Yani kapsam/sızıntı test ediliyordu, SIRALAMA hiç test
+// edilmiyordu — ölçülen üç arıza da (alt-dize eşleşmesi, uzunluk normalizasyonu yokluğu,
+// IDF yokluğu) bu boşlukta yaşadı. Aşağıdakiler o üç davranışı pinliyor.
+
+// 1. Alt-dize eşleşmesi OLMAMALI: "mı" sorgusu `tanımı` KELİMESİNİN İÇİNDE sayılmamalı.
+// Sorgu KISA olan taraf olmalı — ayırt eden yön bu (eski kod indexOf ile içeride buluyordu).
+reset();
+w(LIVE, 'project_tanim.md', note('tanim', 'project', 'h', 'tanımı tanımı tanımı tanımı tanımı tanımı'));
+w(LIVE, 'project_mi.md', note('mi', 'project', 'h', 'mı bağımsız kelime olarak burada'));
+ok('kelime ortasında eşleşme yok', !files(searchNotes('mı', live())).includes('project_tanim.md'));
+ok('bağımsız kelime yine bulunur', files(searchNotes('mı', live())).includes('project_mi.md'));
+
+// 2. UZUNLUK NORMALİZASYONU: kısa ve isabetli not, terimi çok tekrarlayan dev notu geçmeli.
+// Eski skorlamada normalizasyon YOKTU ve 40 KB'lık runbook her sorguyu kazanıyordu.
+reset();
+w(LIVE, 'project_kisa.md', note('kisa', 'project', 'ödeme sistemi kararı', 'ödeme sistemi kararı'));
+// Dev not terimi ÇOK KEZ içeriyor: normalizasyon yoksa ham frekansla kazanır (eski davranış).
+w(LIVE, 'project_dev.md', note('dev', 'project', 'alakasiz',
+  `${'dolgu metni '.repeat(400)} ${'ödeme sistemi '.repeat(200)} ${'dolgu metni '.repeat(400)}`));
+eq('kısa isabetli not dev notu geçer', files(searchNotes('ödeme sistemi', live()))[0], 'project_kisa.md');
+
+// 3. IDF: her notta geçen terim, ayırt eden terimin önüne geçmemeli.
+reset();
+// Ortak terim her notta ve ÇOK KEZ geçiyor: IDF yoksa ham frekansla kazanır (eski davranış).
+for (let i = 0; i < 8; i++) w(LIVE, `project_ortak${i}.md`, note(`ortak${i}`, 'project', 'h', 'ortakterim '.repeat(60)));
+w(LIVE, 'project_nadir.md', note('nadir', 'project', 'h', 'ortakterim hiperspesifik'));
+eq('nadir terim sıralamayı belirler', files(searchNotes('ortakterim hiperspesifik', live()))[0], 'project_nadir.md');
+
+// 4. Türkçe sondan eklemeli eşleşme: kök 5 karakter.
+reset();
+w(LIVE, 'project_rek.md', note('rek', 'project', 'h', 'reklam bütçesi sıfır'));
+ok('reklama → reklam bulunur', files(searchNotes('reklama', live())).includes('project_rek.md'));
+ok('reklamlardan → reklam bulunur', files(searchNotes('reklamlardan', live())).includes('project_rek.md'));
+
+// 5. KISA TERİM GENİŞLETME: 5 karakterden kısa sorgu, uzun türevini bulmalı — ama
+//    yakın-ama-farklı kelimeyi BULMAMALI (kartal ≠ kart).
+reset();
+w(LIVE, 'project_kart.md', note('kart', 'project', 'h', 'kartlar ve kartlık kutusu'));
+w(LIVE, 'project_kartal.md', note('kartal', 'project', 'h', 'kartal kuşu'));
+ok('kısa terim uzun türevini bulur', files(searchNotes('kart', live())).includes('project_kart.md'));
+ok('kartal, kart sorgusuna karışmaz', !files(searchNotes('kart', live())).includes('project_kartal.md'));
+
+// 6. Stopword sorguyu boşaltmamalı: hepsi stopword ise yine de arama yapılır.
+reset();
+w(LIVE, 'project_ne.md', note('ne', 'project', 'h', 'ne yapmalı sorusu'));
+ok('tamamı stopword olan sorgu boş dönmez', searchNotes('ne', live()).length > 0);
+
 // --- dayanıklılık --------------------------------------------------------------
 reset();
 eq('boş dizin boş sonuç', searchNotes('herhangi', live()), []);

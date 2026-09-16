@@ -11,6 +11,11 @@ source "$DOTFILES_DIR/scripts/lib.sh"
 brain_dir="${BRAIN_DIR:-$HOME/Obsidian/brain}"
 src="$brain_dir/bin/scripts"
 dst="$DOTFILES_DIR/brain-template/bin/scripts"
+# bin/tests de vendor'lanıyor. 2026-09-16'da ölçüldü: bu script yalnız bin/scripts'i
+# kapsıyordu, bu yüzden public repo BAYAT test taşıyordu (3 test dosyası hiç yoktu,
+# 3'ü sürüm gerisindeydi) — kodun drift etmemesini sağlayan mekanizmanın kendisinde delik.
+tsrc="$brain_dir/bin/tests"
+tdst="$DOTFILES_DIR/brain-template/bin/tests"
 apply=0
 [[ "${1:-}" == "--apply" ]] && apply=1
 
@@ -35,6 +40,26 @@ for file in "$dst"/*.mjs; do
   name="$(basename "$file")"
   [[ -f "$src/$name" ]] || { printf 'orphan   %s (not in installed brain)\n' "$name"; changed=1; }
 done
+
+# --- bin/tests -------------------------------------------------------------
+if [[ -d "$tsrc" ]]; then
+  mkdir -p "$tdst"
+  for file in "$tsrc"/*.test.mjs; do
+    name="$(basename "$file")"
+    if [[ ! -f "$tdst/$name" ]]; then
+      printf 'new      tests/%s\n' "$name"; changed=1
+    elif ! cmp -s "$file" "$tdst/$name"; then
+      printf 'changed  tests/%s\n' "$name"; changed=1
+    else
+      continue
+    fi
+    [[ $apply == 1 ]] && cp "$file" "$tdst/$name"
+  done
+  for file in "$tdst"/*.test.mjs; do
+    name="$(basename "$file")"
+    [[ -f "$tsrc/$name" ]] || { printf 'orphan   tests/%s (not in installed brain)\n' "$name"; changed=1; }
+  done
+fi
 
 if [[ $changed -eq 0 ]]; then
   success "brain-template matches the installed brain"

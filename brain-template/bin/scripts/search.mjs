@@ -3,7 +3,7 @@
 //   node bin/scripts/search.mjs "<terimler>" [--ws <ad>] [--all] [--type <tip>] [--limit N] [--body]
 //
 // NEDEN VAR: harness yalnız cwd'nin MEMORY.md'sini yüklüyor ve o da not başına TEK SATIR.
-// Kökte çalışırken alt projelerin (yüzlerce nota varabilen leaf'ler) hafızası hiç
+// Kökte çalışırken alt projelerin (kimi 90+ notluk) hafızası hiç
 // görünmüyor, yüklenen leaf'te bile gövde açılmıyordu. Bu script o boşluğu kapatıyor:
 // cevap vermeden ÖNCE aranacak yer burası. Skorlama/katlama mantığı lib.mjs'te (searchNotes),
 // burası sadece KAPSAM + biçim — böylece mantık test edilebilir kalıyor (bin/tests/search.test.mjs).

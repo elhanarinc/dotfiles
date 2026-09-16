@@ -16,9 +16,9 @@ const AUTO_LOG = join(VAULT, 'bin', 'state', 'backlink-auto.log');
 
 // Bir notun indeksini eşitle + linklerini ONAR + eksik geri linkleri YAZ.
 //
-// Bu fonksiyon bir dönem link sorunlarını yalnız BİLDİRİYORDU ("ilgili notlara geri
+// 2026-09-15'e kadar bu fonksiyon link sorunlarını yalnız BİLDİRİYORDU ("ilgili notlara geri
 // linki ekle") ve düzeltme modelin o turda davranmasına bağlıydı. Pratikte davranmıyordu:
-// bir denetimde 27 ölü link + 37 notluk geri link borcu birikmiş bulundu. Bildirim
+// 2026-09-15 denetiminde 27 ölü link + 37 notluk geri link borcu birikmiş bulundu. Bildirim
 // katmanı yanlış katmandı — ikisi de MEKANİK iş:
 //   · link onarımı: hedef dosya adı ile slug'ın tire/alt çizgi farkı, TEK adaylıysa kesin,
 //   · geri link: kural zaten project↔project + hedefi var olan linklere daraltılmış.

@@ -10,6 +10,7 @@ import {
   unlinkedProjects,
 } from './lib.mjs';
 import { linkLeaf } from './link-leaf.mjs';
+import { ensureRetroTask } from './retro-due.mjs';
 
 const LIMIT = 8000;
 const AUTO_LOG = join(VAULT, 'bin', 'state', 'backlink-auto.log');
@@ -32,6 +33,13 @@ const main = async () => {
     if (mine.length > 10) out.push(`- …+${mine.length - 10} tane daha`);
     out.push('');
   }
+
+  // --- retro vadesi: BİLDİRMEK yerine görev panosuna yaz ---
+  // Kullanıcı 2026-09-16: "mantıklı ama ben bunu hatırlamam ki yap et diye". Ayrı bir dürtü
+  // satırı basmıyoruz — [[brain_self_healing_layer_2026_09_15]] bildirim katmanının çürüdüğünü
+  // ÖLÇTÜ. Bunun yerine zaten yük taşıyan panoya tek, işaretçiyle tekilleştirilmiş satır
+  // giriyor; aşağıdaki blok onu bu oturumda okuyup context'e sokuyor. Model turu YOK.
+  try { ensureRetroTask(ws); } catch { /* vade yazılamasa bile brief çıksın */ }
 
   // --- açık görevler: iş alanının panosu (config.json'daki isim), yoksa genel ---
   // Toplanıp SONRA basılıyor: "nerede kalmıştık" cevabı en üstte olsun.
@@ -85,7 +93,7 @@ const main = async () => {
 
   // --- bu iş alanının DİĞER hafıza klasörleri ---
   // Harness yalnızca cwd'nin kendi MEMORY.md'sini yükler. Kökte çalışırken alt projelerin
-  // (ör. yoğun bir leaf'in 64 notu) hafızası görünmez; VAR OLDUĞUNU bilmezsem okumayı da denemem.
+  // (onlarca notu olan alt projeler) hafızası görünmez; VAR OLDUĞUNU bilmezsem okumayı da denemem.
   // Bu satır o körlüğü kapatıyor: nerede olduklarını ve nasıl okunacağını söyler.
   try {
     // DİKKAT: leaf'in vault yolu (brain/personal/_kok) asla cwd'ye eşit olmaz — karşılaştırılacak
@@ -126,8 +134,8 @@ const main = async () => {
   // --- iş alanı içinde bağlanmamış BOŞ proje: bağla ---
   // Harness her cwd için boş bir memory/ açar. Kapsam dışındaysa zararsız, ama bir iş alanı
   // kökünün İÇİNDEYSE bu bağlanmamış gerçek bir projedir: o dizinde açılan oturum boş hafıza
-  // yükler ve orada yazılan not vault'a hiç girmez (bir denetimde 3 tane bulundu, biri
-  // haftalardır sessizce boş kalmış gerçek bir proje). Yalnız BOŞ olanı bağlıyoruz:
+  // yükler ve orada yazılan not vault'a hiç girmez (2026-09-15'te 3 tane bulundu, biri
+  // biri tam da o hafızaya ihtiyaç duyulmadan günler önce açılmıştı). Yalnız BOŞ olanı bağlıyoruz:
   // notu olan yetim klasör dosya taşımak demek, çakışma üretebilir, o karar kullanıcının.
   try {
     const linkedLeaves = [];

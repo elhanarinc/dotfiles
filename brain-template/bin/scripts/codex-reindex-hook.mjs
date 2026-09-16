@@ -72,7 +72,7 @@ const main = async () => {
   for (const dir of dirs) syncIndexes({ only: [dir] });
 
   // Claude tarafındaki reindex-hook ile aynı sözleşme: ölü linki ONAR, eksik geri linki YAZ.
-  // İki hook ayrışırsa Codex'te yazılan notlar denetimsiz kalır — bir denetimde bildirim
+  // İki hook ayrışırsa Codex'te yazılan notlar denetimsiz kalır — 2026-09-15'te bildirim
   // katmanı ikisinde de çalışırken 27 ölü link + 37 notluk borç birikmişti, o yüzden burada
   // da bildirim değil düzeltme var. Sınır aynı: yalnız tek adaylı mekanik eşleşme.
   const repaired = repairLinkFiles(written.map(([dir, file]) => join(dir, file)));

@@ -12,7 +12,7 @@
 //
 // SINIR: sadece SHELL yazımları görülür. python/node script'inin içinden writeFileSync ile
 // yazılan not görünmez — o katmanı okumak shell ayrıştırmasından çok daha pahalı ve kırılgan.
-import { noteWritesFromCommand, resolveNotePath, noteWriteLeaves, VAULT, WORKSPACES, WS_ROOTS } from '../scripts/lib.mjs';
+import { noteWritesFromCommand, resolveNotePath, noteWriteLeaves, VAULT } from '../scripts/lib.mjs';
 
 const HOME = process.env.HOME;
 let pass = 0;
@@ -24,13 +24,13 @@ const eq = (label, got, want) => {
   ok ? pass++ : fails.push(label);
 };
 
-const V = `${HOME}/Obsidian/brain/<ws>/_kok`;
+const V = `${HOME}/Obsidian/brain/personal/_kok`;
 
 // --- yönlendirme ---------------------------------------------------------------
 eq('cat > heredoc hedefi', noteWritesFromCommand(`cat > ${V}/not.md <<'EOF'\ngovde\nEOF`), [`${V}/not.md`]);
 eq('>> ekleme hedefi', noteWritesFromCommand(`echo satir >> ${V}/not.md`), [`${V}/not.md`]);
-eq('tilde açılır', noteWritesFromCommand("cat > ~/Obsidian/brain/<ws>/_kok/t.md <<'E'"),
-  [`${HOME}/Obsidian/brain/<ws>/_kok/t.md`]);
+eq('tilde açılır', noteWritesFromCommand("cat > ~/Obsidian/brain/personal/_kok/t.md <<'E'"),
+  [`${HOME}/Obsidian/brain/personal/_kok/t.md`]);
 eq('boşluk taşıyan tırnaklı yol', noteWritesFromCommand(`cat > "${V}/iki kelime.md" <<'E'`),
   [`${V}/iki kelime.md`]);
 
@@ -61,14 +61,12 @@ eq('null komut', noteWritesFromCommand(null), []);
 
 
 // --- resolveNotePath / noteWriteLeaves: İKİ TABANLI çözüm ----------------------
-// NEDEN: baskın yazma biçimi `cd ~/Obsidian/brain && cat > <ws>/_kok/not.md`, ama
+// NEDEN: baskın yazma biçimi `cd ~/Obsidian/brain && cat > personal/_kok/not.md`, ama
 // hook'a gelen cwd OTURUMUN cwd'sidir (compound komutun İÇİNDEKİ cd değil). Tek tabanla
 // (yalnız cwd) bu biçim sessizce çözülmez ve reindex hook'u hiçbir iş yapmaz — düzeltme
-// "uygulanmış" görünürken çalışmaz. Sahada tam bu şekilde yakalandı.
-// İş alanı adı ve kökü MAKİNEYE ÖZGÜ (bin/state/config.json) — teste gömülmez, oradan okunur.
-const WS = WORKSPACES[0];
-const SESSION_CWD = WS_ROOTS.find(([, name]) => name === WS)?.[0] ?? HOME;
-const KOK = `${VAULT}/${WS}/_kok`;
+// "uygulanmış" görünürken çalışmaz. 2026-09-11'de tam bu şekilde yakalandı.
+const SESSION_CWD = `${HOME}/Desktop/personal-projects`;
+const KOK = `${VAULT}/personal/_kok`;
 // leafForFile yalnız DİZİNİ realpath eder, dosyanın var olması gerekmez — bu yüzden
 // sabit sentetik bir ad kullanılıyor. Gerçek bir nota bağlamak testi kırılgan yapardı:
 // not arşivlenir/yeniden adlandırılırsa üç assert alakasız bir sebeple düşer.
@@ -76,20 +74,20 @@ const REAL = 'zz-notewrites-fixture.md';
 
 eq('mutlak vault yolu çözülür', resolveNotePath(`${KOK}/${REAL}`, SESSION_CWD), `${KOK}/${REAL}`);
 eq('göreli yol VAULT tabanından çözülür (cwd yanlışken)',
-  resolveNotePath(`${WS}/_kok/${REAL}`, SESSION_CWD), `${KOK}/${REAL}`);
+  resolveNotePath(`personal/_kok/${REAL}`, SESSION_CWD), `${KOK}/${REAL}`);
 eq('vault dışı göreli yol null döner', resolveNotePath('src/app.md', SESSION_CWD), null);
 eq('vault dışı mutlak yol null döner', resolveNotePath('/tmp/x.md', SESSION_CWD), null);
 eq('boş girdi null döner', resolveNotePath('', SESSION_CWD), null);
 
 eq('cd + göreli heredoc yazımı leafe çözülür',
-  noteWriteLeaves(`cd ~/Obsidian/brain && cat > ${WS}/_kok/${REAL} <<'E'`, SESSION_CWD).map((w) => w.file),
+  noteWriteLeaves(`cd ~/Obsidian/brain && cat > personal/_kok/${REAL} <<'E'`, SESSION_CWD).map((w) => w.file),
   [REAL]);
 eq('MEMORY.md leaf listesine girmez (üretilen dosya)',
-  noteWriteLeaves(`cd ~/Obsidian/brain && cat > ${WS}/_kok/MEMORY.md <<'E'`, SESSION_CWD), []);
+  noteWriteLeaves("cd ~/Obsidian/brain && cat > personal/_kok/MEMORY.md <<'E'", SESSION_CWD), []);
 eq('proje dosyası yazımı brain işi değil', noteWriteLeaves('cat > README.md <<E', SESSION_CWD), []);
 
 // --- ÜÇÜNCÜ taban: komutun başındaki `cd <leaf-dizini>` -------------------------
-// Sistem bu deliği kendi üzerinde gösterdi: bir not `cd <leaf> && cat > not.md`
+// 2026-09-15'te sistem bu deliği kendi üzerinde gösterdi: bir not `cd <leaf> && cat > not.md`
 // ile yazıldı, hiçbir tabana çözülmedi ve MEMORY.md bayat kaldı — hook "çalıştı" görünürken
 // hiçbir iş yapmadı. İki taban (cwd + VAULT) yalnız vault KÖKÜNDEN göreli biçimi kurtarıyordu.
 eq('cd <leaf-dizini> + çıplak dosya adı çözülür',

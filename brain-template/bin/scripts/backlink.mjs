@@ -10,11 +10,12 @@
 // NE YAPMAZ: hub notlarına (reference/feedback/user) geri link eklemez, hedefi olmayan
 // linkleri onarmaz (o fixlinks.mjs'in işi), arşivli notlara dokunmaz.
 //
-// Vault git altında olsa bile commit'ler seyrek ve toplu olabilir: iki commit arasında
-// --apply'ın ne yazdığını git söylemez. O yüzden her çalışma değiştirdiği dosyaların listesini
-// bin/state/backlink-<zaman>.log'a yazar — çalışma bazında geri alma kaydı budur.
+// Vault private bir git reposu AMA commit'ler seyrek ve toplu: iki commit
+// arasında --apply'ın ne yazdığını git söylemez. O yüzden her çalışma değiştirdiği dosyaların
+// listesini bin/state/backlink-<zaman>.log'a yazar — çalışma bazında geri alma kaydı budur.
+// (Log'lar .gitignore'da: türetilmiş ve gürültülü.)
 //
-// Plan/yazma/gruplama mantığı lib.mjs'e taşındı (`backlinkPlan`/`applyBacklinks`),
+// 2026-09-15: plan/yazma/gruplama mantığı lib.mjs'e taşındı (`backlinkPlan`/`applyBacklinks`),
 // çünkü aynı iş artık yazma anında (PostToolUse) ve oturum açılışında da yapılıyor. Bu CLI
 // TÜM vault'u tarayan toplu koldur ve hâlâ tek başına rapor modunda çalışabilir.
 //

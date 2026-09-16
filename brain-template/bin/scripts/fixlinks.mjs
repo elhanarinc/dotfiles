@@ -6,7 +6,7 @@
 // yalnızca TEK bir aday varsa yazar. Hedefi gerçekten olmayan linkler (henüz yazılmamış not)
 // KASITLI bırakılır — onlar "yazılacak" işaretidir, hata değil.
 //
-// Onarım mantığı lib.mjs'e taşındı (`repairLinksInText`), çünkü artık üç
+// 2026-09-15: onarım mantığı lib.mjs'e taşındı (`repairLinksInText`), çünkü artık üç
 // tüketicisi var — bu CLI, PostToolUse hook'u ve SessionStart süpürmesi. Bu script birikmişi
 // TÜM vault'ta (arşiv + inbox + docs dahil) kapatan toplu koldur; hook'lar yalnız leaf
 // notlarına bakar.
