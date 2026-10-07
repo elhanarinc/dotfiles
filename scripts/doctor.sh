@@ -31,7 +31,7 @@ if command_exists brew && [[ "${DRY_RUN:-0}" != 1 ]]; then
 fi
 
 # --- drift: are the managed dotfiles still symlinks to this repo? -----------
-if [[ "$OS" == macos ]]; then vscode_dir="$HOME/Library/Application Support/Code/User"; else vscode_dir="$HOME/.config/Code/User"; fi
+vscode_dir="$HOME/Library/Application Support/Code/User"
 unlinked=0
 for target in \
   "$HOME/.zshrc" "$HOME/.aliases" "$HOME/.gitconfig" "$HOME/.gitignore" \

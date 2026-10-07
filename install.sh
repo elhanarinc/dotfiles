@@ -1,6 +1,12 @@
 #!/usr/bin/env bash
 set -uo pipefail
 
+# Started from a Rosetta shell on Apple Silicon: relaunch natively so Homebrew
+# and everything built below it are arm64.
+if [[ "$(sysctl -n sysctl.proc_translated 2>/dev/null)" == 1 ]]; then
+  exec /usr/bin/arch -arm64 /bin/bash "$0" "$@"
+fi
+
 DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 export DOTFILES_DIR
 # shellcheck source=scripts/lib.sh

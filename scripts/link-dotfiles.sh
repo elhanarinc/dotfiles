@@ -17,7 +17,7 @@ link_file "$DOTFILES_DIR/.config/ghostty/config" "$HOME/.config/ghostty/config"
 link_file "$DOTFILES_DIR/.vim/colors" "$HOME/.vim/colors"
 link_file "$DOTFILES_DIR/ssh/config" "$HOME/.ssh/config"
 
-if [[ "$OS" == macos ]]; then vscode="$HOME/Library/Application Support/Code/User"; else vscode="$HOME/.config/Code/User"; fi
+vscode="$HOME/Library/Application Support/Code/User"
 link_file "$DOTFILES_DIR/.config/Code/User/settings.json" "$vscode/settings.json"
 link_file "$DOTFILES_DIR/.config/Code/User/mcp.json" "$vscode/mcp.json"
 if [[ -d "$DOTFILES_DIR/.config/Code/User/snippets" ]]; then

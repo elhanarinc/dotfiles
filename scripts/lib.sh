@@ -9,13 +9,21 @@ header() { printf "\n${BLUE}==> %s${NC}\n" "$*"; }
 die() { error "$*"; exit 1; }
 command_exists() { command -v "$1" >/dev/null 2>&1; }
 
+# macOS only. Architecture comes from the hardware, not `uname -m`: inside a
+# Rosetta shell uname reports x86_64 on Apple Silicon, and anything installed
+# from there (Homebrew included) lands as an Intel build that stops running
+# once Rosetta is gone.
 detect_os() {
-  ARCH="$(uname -m)"
-  case "$(uname -s)" in
-    Darwin) OS=macos; [[ "$ARCH" == arm64 ]] && HOMEBREW_PREFIX=/opt/homebrew || HOMEBREW_PREFIX=/usr/local ;;
-    Linux) OS=linux; HOMEBREW_PREFIX=/home/linuxbrew/.linuxbrew ;;
-    *) die "Unsupported OS: $(uname -s)" ;;
-  esac
+  [[ "$(uname -s)" == Darwin ]] || die "Unsupported OS: $(uname -s) (macOS only)"
+  OS=macos
+  if [[ "$(sysctl -n sysctl.proc_translated 2>/dev/null)" == 1 ]]; then
+    die "running under Rosetta (x86_64); open a native terminal or run: arch -arm64 $0"
+  fi
+  if [[ "$(sysctl -n hw.optional.arm64 2>/dev/null)" == 1 ]]; then
+    ARCH=arm64; HOMEBREW_PREFIX=/opt/homebrew
+  else
+    ARCH=x86_64; HOMEBREW_PREFIX=/usr/local
+  fi
   export OS ARCH HOMEBREW_PREFIX
 }
 

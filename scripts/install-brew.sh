@@ -4,7 +4,6 @@ DOTFILES_DIR="${DOTFILES_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 source "$DOTFILES_DIR/scripts/lib.sh"
 detect_os
 phase="${1:-brew}"
-[[ "$OS" == macos ]] || { info "Homebrew desktop phase skipped on Linux"; exit 0; }
 if ! command_exists brew; then
   if [[ "${DRY_RUN:-0}" == 1 ]]; then info "would install Homebrew from brew.sh"; exit 0; fi
   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
@@ -17,7 +16,9 @@ taps="$(sed -nE 's/^[[:space:]]*tap[[:space:]]+"([^"]+)".*/\1/p' "$DOTFILES_DIR/
 # formula from it still fails with "Refusing to load formula from untrusted tap".
 # Trust every tap the Brewfile declares before either bundle phase runs — both the
 # `brew` and the `apps` phase read the same file, so this sits above the branch.
-if [[ -n "$taps" ]] && brew trust --help >/dev/null 2>&1; then
+# Under --dry-run brew must not execute at all (it writes its cache under $HOME),
+# so the `brew trust --help` capability probe is skipped there.
+if [[ -n "$taps" ]] && { [[ "${DRY_RUN:-0}" == 1 ]] || brew trust --help >/dev/null 2>&1; }; then
   for t in $taps; do run brew trust --tap "$t"; done
 elif [[ -n "$taps" ]]; then
   warn "this Homebrew has no \`brew trust\`; tap(s) may fail to load: $taps"

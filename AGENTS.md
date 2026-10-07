@@ -10,7 +10,7 @@ This is a public workstation-bootstrap repository. Track reusable configuration 
 - Test mutations with a temporary `HOME` and stubbed commands.
 - Preserve existing local files, AI settings, and living-brain content; use backup-before-link behavior.
 - Never add package cleanup/removal to the default flow.
-- Keep macOS arm64 as the primary target and Linux behavior best-effort.
+- macOS only, Apple Silicon first. Detect architecture with `sysctl hw.optional.arm64`, never `uname -m` (it reports x86_64 inside Rosetta). Prefer Homebrew formulae/casks over curl installers.
 
 ## Validation
 
@@ -19,9 +19,12 @@ Run before committing:
 ```bash
 bash tests/run.sh
 find scripts tests -type f -name '*.sh' -print0 | xargs -0 -n1 bash -n
+just lint
 scripts/audit-public.sh
 git diff --check
 ```
+
+When `brain-template/` changed, also run `node --test brain-template/bin/tests/*.test.mjs` and `scripts/sync-brain-template.sh` (must report no drift).
 
 The only allowed real-machine installer validation during repository development is `./install.sh --dry-run`. Inventory, doctor, and `brew bundle check` are read-only.
 

@@ -1,7 +1,16 @@
 # =============================================================
 # PATH — set before everything else
 # =============================================================
-export PATH="$HOME/bin:$HOME/.local/bin:/usr/local/bin:$PATH"
+# Homebrew first, ahead of /usr/local/bin: GUI-app installers drop their own
+# (sometimes Intel-only) copies of kubectl & co. there, which would otherwise
+# shadow the Homebrew builds. /usr/local/bin stays on PATH via /etc/paths.
+typeset -U path
+if [[ -x /opt/homebrew/bin/brew ]]; then
+  eval "$(/opt/homebrew/bin/brew shellenv)"
+elif [[ -x /usr/local/bin/brew ]]; then
+  eval "$(/usr/local/bin/brew shellenv)"
+fi
+path=("$HOME/bin" "$HOME/.local/bin" $path)
 
 # =============================================================
 # Oh-My-Zsh
@@ -34,12 +43,8 @@ plugins=(
   zsh-syntax-highlighting
   you-should-use
   kubectl
+  macos
 )
-
-# macOS-specific plugins
-if [[ "$(uname)" == "Darwin" ]]; then
-  plugins+=(macos)
-fi
 
 source "$ZSH/oh-my-zsh.sh"
 
@@ -103,8 +108,8 @@ pnpm() { _nvm_load; pnpm "$@"; }
 # =============================================================
 # Ruby (Homebrew)
 # =============================================================
-if [[ "$(uname)" == "Darwin" ]] && command -v brew &>/dev/null; then
-  export PATH="$(brew --prefix)/opt/ruby/bin:$PATH"
+if [[ -n "$HOMEBREW_PREFIX" ]]; then
+  export PATH="$HOMEBREW_PREFIX/opt/ruby/bin:$PATH"
 fi
 
 # =============================================================

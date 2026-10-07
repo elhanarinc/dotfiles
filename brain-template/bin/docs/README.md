@@ -224,7 +224,7 @@ $N ~/Obsidian/brain/bin/scripts/prune.mjs --apply     # archive leaves whose rep
 $N ~/Obsidian/brain/bin/scripts/archive.mjs personal/_kok/old_note.md
 $N ~/Obsidian/brain/bin/scripts/fixlinks.mjs          # repair mechanical [[wikilink]] mismatches
 $N ~/Obsidian/brain/bin/scripts/backlink.mjs          # report one-way project↔project links
-$N ~/Obsidian/brain/bin/tests/selfheal.test.mjs       # boundary tests for the self-healing layer
+$N --test ~/Obsidian/brain/bin/tests/*.test.mjs     # every brain test suite (pass the files, not the folder)
 $N ~/Obsidian/brain/bin/scripts/backlink.mjs --apply  # write the missing backlinks (idempotent)
 $N ~/Obsidian/brain/bin/scripts/unmigrate.mjs         # full undo plan (--apply to execute)
 ```

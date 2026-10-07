@@ -27,12 +27,12 @@ Supported controls:
 ./install.sh --help
 ```
 
-macOS arm64 is the primary supported platform. Linux shell setup remains best-effort; macOS applications are skipped there.
+macOS only, Apple Silicon first; everything is installed through Homebrew where a formula or cask exists. Started from a Rosetta (x86_64) shell, `install.sh` relaunches itself natively so nothing is installed as an Intel build. New shells put Homebrew's `bin` ahead of `/usr/local/bin`.
 
 ## What it manages
 
-- Homebrew and CLI tools: Git/GitHub CLI, modern shell tools, tmux, Vim, Go, Node, Python/pyenv/uv, Ruby, Java 17, AWS CLI, kubectl, Helm, Terraform, media/document utilities, and formatters.
-- Applications: Docker Desktop, VS Code, Ghostty, Chrome, Spotify, Slack, Obsidian, Postman, Lens, Caffeine, ChatGPT, Claude, iTerm2, and general desktop utilities.
+- Homebrew and CLI tools: Git/GitHub CLI, modern shell tools, tmux, Vim, Go, Node, Python/pyenv/uv, Ruby, Java 17, AWS CLI, kubectl, Helm, eksctl, Terraform, media/document utilities, and formatters.
+- Applications: Docker Desktop, VS Code, Ghostty, Chrome, Spotify, Slack, Obsidian, Postman, Headlamp, Caffeine, ChatGPT, Claude, iTerm2, and general desktop utilities.
 - Shell: Oh My Zsh, autosuggestions, syntax highlighting, fzf-tab, you-should-use, Starship, NVM, TPM, and fzf integration.
 - Allowlisted dotfile links with timestamped backups under `~/.dotfiles_backup/`.
 - VS Code settings, MCP template, snippets, and extensions.
@@ -93,7 +93,9 @@ Repository tests operate in temporary homes:
 bash tests/run.sh
 ```
 
-`brain-template/bin/scripts/` is kept byte-identical to the installed brain. After changing those scripts on a machine, pull them back in:
+The same checks are available as `just` recipes (`just` lists them all): `just doctor`, `just audit`, `just test`, `just lint`, `just plan`, `just brain-drift`, `just brew-check`.
+
+`brain-template/bin/scripts/*.mjs` and `brain-template/bin/tests/*.test.mjs` are kept byte-identical to the installed brain. After changing either on a machine, pull them back in:
 
 ```bash
 ./scripts/sync-brain-template.sh           # report drift
