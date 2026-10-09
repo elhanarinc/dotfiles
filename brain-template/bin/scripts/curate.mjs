@@ -295,7 +295,8 @@ const logLine = (s) => {
 
 function install() {
   const plist = join(process.env.HOME, 'Library', 'LaunchAgents', `${LABEL}.plist`);
-  const node = process.execPath;
+  // nvm node'u sürüm yükseltince kaybolur; hook'lar gibi sabit homebrew node'u tercih et.
+  const node = existsSync('/opt/homebrew/bin/node') ? '/opt/homebrew/bin/node' : process.execPath;
   const path = [join(process.env.HOME, '.local', 'bin'), '/opt/homebrew/bin', '/usr/local/bin', '/usr/bin', '/bin'].join(':');
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
