@@ -1124,3 +1124,19 @@ export function unlinkedProjects() {
   }
   return out;
 }
+
+// Küratör (curate.mjs, launchd) nabzı — brief ve codex-brief aynı satırı basar.
+// Arka plan işinin SESSİZCE ölmesi bu sistemin bilinen arıza biçimi: bayatlık ve hata bağırır.
+export const CURATOR_STATUS = join(VAULT, 'bin', 'state', 'curator-status.json');
+export function curatorLine(now = Date.now(), path = CURATOR_STATUS) {
+  try {
+    if (!existsSync(path)) return '⚠️ Küratör hiç çalışmadı — kur: `node ~/Obsidian/brain/bin/scripts/curate.mjs --install`';
+    const s = JSON.parse(readFileSync(path, 'utf8'));
+    const age = (now - Date.parse(s.last_run)) / 864e5;
+    if (!(age <= 3)) return `⚠️ Küratör ${Math.floor(age)} gündür çalışmadı (launchd com.brain.curator) — bak: \`launchctl print gui/$(id -u)/com.brain.curator\`, log: brain/bin/state/curator.out.log`;
+    if (s.error) return `⚠️ Küratör son çalışmada hata verdi: ${String(s.error).slice(0, 200)} — log: brain/bin/state/curator.out.log`;
+    const w = s.written?.length ? ` · not: ${s.written.slice(0, 8).join(', ')}${s.written.length > 8 ? '…' : ''}` : '';
+    const left = s.pending_left ? ` · bekleyen ${s.pending_left}` : '';
+    return `Küratör (${String(s.last_run).slice(0, 10)}): ${s.curated} oturum işlendi${w}${left} — günlük: brain/bin/state/curator-log.md`;
+  } catch { return null; }
+}

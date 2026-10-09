@@ -11,6 +11,7 @@ import {
   parseFrontmatter,
   readHookInput,
   syncIndexes,
+  curatorLine,
 } from './lib.mjs';
 
 const LIMIT = 8000;
@@ -85,6 +86,7 @@ const main = async () => {
     '',
     ...metadataLines(inbox),
     ...(inbox ? [''] : []),
+    ...((c) => (c ? [c, ''] : []))(curatorLine()),
     `### ${ctx.ws} kardeş leaf kataloğu — otomatik yüklenmez`,
     ...(siblings.length ? [siblings.join(', ')] : ['- Kardeş leaf yok.']),
     '',

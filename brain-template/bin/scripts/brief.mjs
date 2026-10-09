@@ -7,7 +7,7 @@ import { join, basename } from 'node:path';
 import {
   VAULT, TASK_DIR, INBOX_DIR, readHookInput, workspaceForCwd, syncIndexes, parseFrontmatter,
   auditLeaves, listLeafDirs, loadNotes, repairLinkFiles, backlinkPlan, applyBacklinks,
-  unlinkedProjects,
+  unlinkedProjects, curatorLine,
 } from './lib.mjs';
 import { linkLeaf } from './link-leaf.mjs';
 import { ensureRetroTask } from './retro-due.mjs';
@@ -84,10 +84,12 @@ const main = async () => {
     // Guard'lı: `ops` eklenmeden önce yazılmış inbox notlarında bu alan yok, satır düşer.
     if (fm.ops) out.push(`Çalıştırılan ops: ${fm.ops}`);
     if (fm.notes) out.push(`Yazılan not: ${fm.notes}`);
-    out.push(`Devamı: \`brain/bin/state/inbox/${ws}/${last.f}\`${pending.length > 1 ? ` (+${pending.length - 1} eski)` : ''}`);
-    out.push('Küratörlük: kalıcı olanı memory notuna işle, sonra dosyayı sil.');
+    out.push(`Devamı: \`brain/bin/state/inbox/${ws}/${last.f}\``);
     out.push('');
   }
+
+  // Küratörlük artık curate.mjs (launchd) işi; burada yalnız nabzı görünür.
+  if (ws) { const cur = curatorLine(); if (cur) out.push(cur, ''); }
 
   out.push(...taskLines);
 

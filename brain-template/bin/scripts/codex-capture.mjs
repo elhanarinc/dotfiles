@@ -93,8 +93,9 @@ const candidatePaths = (input) => {
   return [...paths];
 };
 
-// Codex'in shell aracı. `hooks.json` matcher'ı `(^|__)exec$` — gerçek ad `exec` ya da
-// `container__exec`; tek bir literal ada güvenilmez, kalıba bakılır.
+// Codex'in shell aracı (TRANSCRIPT adı): code-mode `exec` ya da `container__exec`. HOOK
+// payload'ında düz shell `Bash` diye gelir; hooks.json matcher'ı ikisini de kapsar.
+// Tek bir literal ada güvenilmez, kalıba bakılır.
 const SHELL_TOOL = /^(?:exec|shell|local_shell|bash)$|__exec$/i;
 
 // DİKKAT: `function_call.arguments` bir NESNE DEĞİL, JSON *string*'i. Ham hâlde regex'e

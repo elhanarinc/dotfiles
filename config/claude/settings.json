@@ -32,5 +32,6 @@
         ]
       }
     ]
-  }
+  },
+  "cleanupPeriodDays": 180
 }
