@@ -24,7 +24,7 @@
     ],
     "PostToolUse": [
       {
-        "matcher": "(^|__)exec$|apply_patch$",
+        "matcher": "^Bash$|(^|__)exec$|apply_patch$",
         "hooks": [
           {
             "type": "command",
