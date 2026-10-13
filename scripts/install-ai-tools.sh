@@ -10,6 +10,9 @@ if ! command_exists codex; then
 fi
 ensure_dir "$HOME/.claude"
 copy_template "$DOTFILES_DIR/config/claude/settings.json" "$HOME/.claude/settings.json"
+copy_template "$DOTFILES_DIR/config/claude/hooks/tsc-check.mjs" "$HOME/.claude/hooks/tsc-check.mjs"
+# Private, machine/company-specific settings (e.g. autoMode) live outside this public repo.
+if command_exists node; then run node "$DOTFILES_DIR/scripts/merge-claude-overlay.mjs"; fi
 ensure_dir "$HOME/.codex"
 copy_template "$DOTFILES_DIR/config/codex/config.toml" "$HOME/.codex/config.toml"
 copy_template "$DOTFILES_DIR/config/codex/hooks.json" "$HOME/.codex/hooks.json"

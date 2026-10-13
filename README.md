@@ -119,7 +119,8 @@ Before re-running on a customized existing Mac, use `./install.sh --dry-run`. Co
 install.sh                 phase orchestrator
 Brewfile                   Homebrew formulae and casks
 scripts/                   install phases, audit, inventory, doctor, brain-template sync
-config/claude/             portable Claude settings
+config/claude/             portable Claude settings, ask rules for infra/DB writes, tsc hook
+scripts/merge-claude-overlay.mjs  merges a private overlay (~/Obsidian/brain/bin/state/claude-settings.overlay.json, e.g. autoMode) into ~/.claude/settings.json
 config/codex/              portable Codex settings and agent contract
 brain-template/            data-free living-brain software (bin/scripts, bin/state, bin/docs)
 .config/                   VS Code, Ghostty, and Starship settings
