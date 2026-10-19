@@ -11,6 +11,8 @@ elif [[ -x /usr/local/bin/brew ]]; then
   eval "$(/usr/local/bin/brew shellenv)"
 fi
 path=("$HOME/bin" "$HOME/.local/bin" $path)
+# Docker Desktop CLI tools ("User" install mode) — appended, so Homebrew wins.
+[[ -d "$HOME/.docker/bin" ]] && path+=("$HOME/.docker/bin")
 
 # =============================================================
 # Oh-My-Zsh

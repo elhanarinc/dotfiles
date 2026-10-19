@@ -1,3 +1,7 @@
+# Docker Desktop CLI tools ("User" install mode). Docker's installer appends its
+# own block here with an absolute home path on update — delete it, keep this.
+[[ -d "$HOME/.docker/bin" ]] && export PATH="$PATH:$HOME/.docker/bin"
+
 # Autocorrect typos in path names when using `cd`
 shopt -s cdspell;
 
