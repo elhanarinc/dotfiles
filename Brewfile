@@ -97,7 +97,10 @@ brew "awscli"           # AWS CLI
 brew "kubernetes-cli"   # Kubernetes CLI (formula is kubernetes-cli; `kubectl` is its alias)
 brew "helm"             # Kubernetes package manager
 brew "eksctl"           # Amazon EKS CLI
-brew "terraform"        # Infrastructure as Code
+# homebrew/core froze terraform at 1.5.7 (last MPL release) and disabled it;
+# current releases (BUSL) ship only from HashiCorp's own tap.
+tap "hashicorp/tap"
+brew "hashicorp/tap/terraform"  # Infrastructure as Code
 brew "nmap"             # Network scanner
 brew "telnet"           # Network debugging
 
@@ -113,7 +116,6 @@ brew "ffmpeg"           # Audio/video processing
 brew "imagemagick"      # Image processing
 brew "pngquant"         # Lossy PNG compression — App Store screenshots, web assets
 brew "gifsicle"         # GIF optimisation/resize
-brew "zopfli"           # Zlib-compatible recompression (smallest PNG/gzip)
 brew "watchman"         # Filesystem watcher
 
 # ============================================================
@@ -184,4 +186,5 @@ cask "zulu@17"          # Azul Zulu JDK 17 (LTS)
 # brew "cliclick"         # Scripted mouse/keyboard clicks
 # brew "innoextract"      # Extract Inno Setup installers
 # brew "python-tk@3.10"   # Tk bindings for Python 3.10
+# brew "zopfli"           # Smallest PNG/gzip recompression — deprecated (upstream archived), disabled 2026-11-13
 # cask "love"             # LÖVE 2D game framework
