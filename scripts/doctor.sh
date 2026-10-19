@@ -14,10 +14,11 @@ brain_dir="${BRAIN_DIR:-$HOME/Obsidian/brain}"
 
 # --- drift: does the Brewfile still describe this machine? ------------------
 # Presence checks above cannot see a manifest that has stopped being true.
+# --no-upgrade: outdated packages are counted separately below, not as drift.
 # Skipped under --dry-run: brew populates its cache under $HOME, which would
 # make `install.sh --dry-run` mutate the caller's home (tests/install_test.sh).
 if command_exists brew && [[ "${DRY_RUN:-0}" != 1 ]]; then
-  if brew bundle check --file="$DOTFILES_DIR/Brewfile" >/dev/null 2>&1; then
+  if brew bundle check --no-upgrade --file="$DOTFILES_DIR/Brewfile" >/dev/null 2>&1; then
     success "Brewfile satisfied"
   else
     warn "Brewfile drift — run: brew bundle check --verbose --file=Brewfile"
@@ -49,7 +50,7 @@ done
   || warn "$unlinked managed file(s) drifted — run: ./install.sh --only links"
 
 # --- drift: is a tracked config file being appended to by installers? -------
-if grep -qE '^# (Added by|The following lines have been added)' "$DOTFILES_DIR/.zshrc" "$DOTFILES_DIR/.bash_profile" 2>/dev/null; then
+if grep -qE '^# (Added by|The following lines (have been|were) added)' "$DOTFILES_DIR/.zshrc" "$DOTFILES_DIR/.bash_profile" 2>/dev/null; then
   warn "an installer appended to a tracked shell file — move it to ~/.zshrc.local"
 else
   success "no installer appends in tracked shell files"
