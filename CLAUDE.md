@@ -6,4 +6,6 @@ Use Conventional Commits and keep descriptions lowercase with no trailing period
 
 While changing the installer on an existing configured Mac, run only `./install.sh --dry-run`. Exercise mutations in a temporary `HOME`; preserve current configuration and existing Obsidian content.
 
+Generic subagents live in `config/claude/agents/`. Anything private or company-specific (autoMode rules, private skills, workspace CLAUDE.md files) belongs in the private brain (`claude-settings.overlay.json`, `bin/state/claude-home/`), never here.
+
 Claude's portable settings live in `config/claude/settings.json`. The installed living brain is local data and must not be imported into the repository.

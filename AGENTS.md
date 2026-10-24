@@ -38,6 +38,11 @@ AI configuration may wire generic hooks to `~/Obsidian/brain`, but this reposito
 
 The `*.mjs` files under `brain-template/bin/scripts/` are the *real* scripts, kept byte-identical to the installed brain so code cannot drift. After changing them on a machine, run `scripts/sync-brain-template.sh` and re-run `tests/brain_test.sh` and `scripts/audit-public.sh`.
 
+Public vs private split: generic Claude pieces (settings, subagents in `config/claude/agents/`) live here; anything private or company-specific (autoMode rules, private or third-party skills, workspace `CLAUDE.md` files) lives in the private brain as `claude-settings.overlay.json` and `bin/state/claude-home/`.
+
+- Restore: `BRAIN_REPO=... ./install.sh --only brain` clones the private brain, merges the overlay, and restores claude-home into `$HOME` without overwriting.
+- Export: `just claude-private-export` (`scripts/export-claude-private.sh`) copies the paths listed in `bin/state/claude-home.list` into the private brain; commit it there by hand.
+
 Two deliberate exceptions to that parity, both code-only:
 
 - `verify.mjs` is not vendored at all — it asserts against one machine's workspace names, symlink count and fixtures.

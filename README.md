@@ -18,6 +18,16 @@ On a new Mac, after reviewing the plan:
 ./install.sh
 ```
 
+With a private `BRAIN_REPO` over SSH, authenticate first, then run the brain phase on its own:
+
+```bash
+./install.sh --skip brain
+gh auth login            # or add an SSH key to GitHub
+BRAIN_REPO=git@github.com:<you>/brain.git ./install.sh --only brain
+```
+
+The brain phase also merges the overlay and restores claude-home, so nothing else needs re-running.
+
 Supported controls:
 
 ```bash
@@ -59,6 +69,7 @@ Private brain and Claude files (all optional, all kept outside this repo):
 - `BRAIN_REPO=git@github.com:<you>/brain.git ./install.sh` clones your private brain instead of copying the empty template (only when `~/Obsidian/brain` does not exist yet).
 - Files under `<brain>/bin/state/claude-home/` are restored into `$HOME` at the same relative path (e.g. `.claude/skills/x/SKILL.md`), never overwriting existing files. The brain phase also merges `claude-settings.overlay.json` into `~/.claude/settings.json`.
 - `just claude-private-export` is the reverse: it copies the `$HOME`-relative paths listed (one per line, files or directories) in `<brain>/bin/state/claude-home.list` into `claude-home/`, overwriting what is there.
+- claude-home can hold any private Claude file: private or third-party skills, workspace `CLAUDE.md` files. After changing one, run `just claude-private-export` and commit the private brain; this is not automatic.
 - Generic subagents (`dev`, `reviewer`, `runner`, `scout`, `sim-qa`) from `config/claude/agents/` are installed into `~/.claude/agents/` if missing.
 
 ```text
@@ -117,7 +128,7 @@ Before re-running on a customized existing Mac, use `./install.sh --dry-run`. Co
 2. Sign in to GitHub, cloud CLIs, Docker, Slack, Spotify, Claude, Codex, VS Code, and other applications as needed.
 3. Open VS Code and install the `code` shell command if it is not already available, then run `./install.sh --only vscode`.
 4. In tmux, press `prefix + I` to install plugins.
-5. Fill `~/Obsidian/brain/bin/state/config.json`, then run `link-leaf.mjs` for each repository that should participate in the living brain.
+5. Living brain: with the template brain, fill `~/Obsidian/brain/bin/state/config.json` and run `link-leaf.mjs` for each repository that should participate. With a cloned private brain, `config.json` is already present if it was committed; verify its roots match this machine, then re-run `link-leaf.mjs` for each repository (the memory symlinks are machine-local).
 6. Run `./scripts/doctor.sh` and resolve remaining warnings.
 
 ## Repository layout
@@ -126,7 +137,9 @@ Before re-running on a customized existing Mac, use `./install.sh --dry-run`. Co
 install.sh                 phase orchestrator
 Brewfile                   Homebrew formulae and casks
 scripts/                   install phases, audit, inventory, doctor, brain-template sync
-config/claude/             portable Claude settings, ask rules for infra/DB writes, tsc hook
+config/claude/             portable Claude settings, ask rules for infra/DB writes, tsc hook, generic subagents
+config/claude/agents/      generic subagent definitions (dev, reviewer, runner, scout, sim-qa)
+scripts/export-claude-private.sh  copies listed $HOME Claude files into the private brain's claude-home/
 scripts/merge-claude-overlay.mjs  merges a private overlay (~/Obsidian/brain/bin/state/claude-settings.overlay.json, e.g. autoMode) into ~/.claude/settings.json
 config/codex/              portable Codex settings and agent contract
 brain-template/            data-free living-brain software (bin/scripts, bin/state, bin/docs)

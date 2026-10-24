@@ -17,3 +17,11 @@ brain-template/bin/state/config.json
 brain-template/bin/state/inbox/*
 !brain-template/bin/state/inbox/.gitkeep
 *.log
+.env.*
+.secrets/
+*.pem
+*.p8
+*.p12
+*.key
+**/.claude/settings.local.json
+node_modules/
