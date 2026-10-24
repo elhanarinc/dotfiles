@@ -11,6 +11,9 @@ fi
 ensure_dir "$HOME/.claude"
 copy_template "$DOTFILES_DIR/config/claude/settings.json" "$HOME/.claude/settings.json"
 copy_template "$DOTFILES_DIR/config/claude/hooks/tsc-check.mjs" "$HOME/.claude/hooks/tsc-check.mjs"
+for agent in dev reviewer runner scout sim-qa; do
+  copy_template "$DOTFILES_DIR/config/claude/agents/$agent.md" "$HOME/.claude/agents/$agent.md"
+done
 # Private, machine/company-specific settings (e.g. autoMode) live outside this public repo.
 if command_exists node; then run node "$DOTFILES_DIR/scripts/merge-claude-overlay.mjs"; fi
 ensure_dir "$HOME/.codex"

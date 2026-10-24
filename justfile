@@ -50,3 +50,7 @@ brain-drift:
 brew-check:
     brew bundle check --verbose --file=Brewfile || true
     @echo "--- outdated: $(brew outdated --quiet | wc -l | tr -d ' ') package(s) ---"
+
+# Copy private Claude files listed in the brain's claude-home.list into the private brain
+claude-private-export:
+    ./scripts/export-claude-private.sh

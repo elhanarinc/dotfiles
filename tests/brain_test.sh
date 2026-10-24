@@ -76,4 +76,43 @@ assert_not_exists "$BRAIN_DIR/bin/state/inbox/personal/$(date -u +%Y-%m-%d)-zzzz
 "$REPO_ROOT/scripts/install-brain.sh" >/dev/null
 [[ -f "$BRAIN_DIR/personal/repo/seed.md" ]] || fail "re-running install-brain destroyed existing notes"
 
+# --- private Claude files restore: same relative path, never overwrite ------
+priv="$BRAIN_DIR/bin/state/claude-home"
+mkdir -p "$priv/.claude/skills/x" "$priv/Desktop/work"
+printf 'private skill\n' > "$priv/.claude/skills/x/SKILL.md"
+printf 'private rules\n' > "$priv/Desktop/work/CLAUDE.md"
+mkdir -p "$HOME/Desktop/work"; printf 'local rules\n' > "$HOME/Desktop/work/CLAUDE.md"
+"$REPO_ROOT/scripts/install-brain.sh" >/dev/null
+[[ "$(cat "$HOME/.claude/skills/x/SKILL.md")" == "private skill" ]] || fail "claude-home file not restored"
+[[ "$(cat "$HOME/Desktop/work/CLAUDE.md")" == "local rules" ]] || fail "claude-home restore overwrote an existing file"
+
+# --- export is the reverse, driven by claude-home.list ------------------------
+printf '%s\n' '.claude/skills/x' 'Desktop/work/CLAUDE.md' > "$BRAIN_DIR/bin/state/claude-home.list"
+printf 'edited skill\n' > "$HOME/.claude/skills/x/SKILL.md"
+"$REPO_ROOT/scripts/export-claude-private.sh" >/dev/null
+[[ "$(cat "$priv/.claude/skills/x/SKILL.md")" == "edited skill" ]] || fail "export did not overwrite"
+[[ "$(cat "$priv/Desktop/work/CLAUDE.md")" == "local rules" ]] || fail "export missed a listed file"
+
+# --- overlay merges in the brain phase ---------------------------------------
+printf '{"autoMode":{"allow":["x"]}}\n' > "$BRAIN_DIR/bin/state/claude-settings.overlay.json"
+printf '{}\n' > "$HOME/.claude/settings.json"
+"$REPO_ROOT/scripts/install-brain.sh" >/dev/null
+assert_contains "$(cat "$HOME/.claude/settings.json")" autoMode
+
+# --- BRAIN_REPO clones instead of copying the template -----------------------
+if command -v git >/dev/null; then
+  src="$HOME/brain-src"; git init -q "$src"; printf 'marker\n' > "$src/MARKER"
+  git -C "$src" add MARKER
+  git -C "$src" -c user.name=t -c user.email=t@t commit -q -m seed
+  BRAIN_DIR="$HOME/cloned/brain" BRAIN_REPO="$src" "$REPO_ROOT/scripts/install-brain.sh" >/dev/null
+  [[ -f "$HOME/cloned/brain/MARKER" ]] || fail "BRAIN_REPO was not cloned"
+fi
+
+# --- generic agents are installed --------------------------------------------
+HOME="$HOME/fresh" ; mkdir -p "$HOME"
+PATH="$TEST_ROOT/bin:$PATH" bash -c 'command -v claude >/dev/null' || { printf '#!/bin/sh\n' > "$TEST_ROOT/bin/claude"; chmod +x "$TEST_ROOT/bin/claude"; }
+for t in codex; do [[ -x "$TEST_ROOT/bin/$t" ]] || { printf '#!/bin/sh\n' > "$TEST_ROOT/bin/$t"; chmod +x "$TEST_ROOT/bin/$t"; }; done
+"$REPO_ROOT/scripts/install-ai-tools.sh" >/dev/null 2>&1
+for a in dev reviewer runner scout sim-qa; do [[ -f "$HOME/.claude/agents/$a.md" ]] || fail "agent not installed: $a"; done
+
 printf 'PASS brain_test\n'

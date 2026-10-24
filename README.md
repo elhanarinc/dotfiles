@@ -54,6 +54,13 @@ Claude/Codex login state, transcripts, caches, project trust, device state, clou
 
 A plain-Markdown memory at `~/Obsidian/brain`, shared by Claude Code and Codex. The template carries the scripts and empty folders only — no notes, no workspace names, no machine paths.
 
+Private brain and Claude files (all optional, all kept outside this repo):
+
+- `BRAIN_REPO=git@github.com:<you>/brain.git ./install.sh` clones your private brain instead of copying the empty template (only when `~/Obsidian/brain` does not exist yet).
+- Files under `<brain>/bin/state/claude-home/` are restored into `$HOME` at the same relative path (e.g. `.claude/skills/x/SKILL.md`), never overwriting existing files. The brain phase also merges `claude-settings.overlay.json` into `~/.claude/settings.json`.
+- `just claude-private-export` is the reverse: it copies the `$HOME`-relative paths listed (one per line, files or directories) in `<brain>/bin/state/claude-home.list` into `claude-home/`, overwriting what is there.
+- Generic subagents (`dev`, `reviewer`, `runner`, `scout`, `sim-qa`) from `config/claude/agents/` are installed into `~/.claude/agents/` if missing.
+
 ```text
 brain/
   <workspace>/     one folder per project, each with its own generated MEMORY.md
