@@ -46,7 +46,8 @@ macOS only, Apple Silicon first; everything is installed through Homebrew where 
 - Shell: Oh My Zsh, autosuggestions, syntax highlighting, fzf-tab, you-should-use, Starship, NVM, TPM, and fzf integration.
 - Allowlisted dotfile links with timestamped backups under `~/.dotfiles_backup/`.
 - VS Code settings, MCP template, snippets, and extensions.
-- Portable Claude/Codex defaults and living-brain hooks without authentication or trust state.
+- Portable Claude/Codex defaults and living-brain hooks without authentication or trust state. The `ai` phase also registers the Claude marketplaces declared in settings and installs the enabled plugins (the statusLine needs claude-hud).
+- The Xcode Command Line Tools: the `brew` phase runs `xcode-select --install` when they are missing and waits (up to 30 min) before touching Homebrew.
 - A new, empty brain at `~/Obsidian/brain`; existing brain content is always preserved.
 
 The installer never runs `brew bundle cleanup` and does not remove software or user data.
@@ -111,7 +112,11 @@ Repository tests operate in temporary homes:
 bash tests/run.sh
 ```
 
-The same checks are available as `just` recipes (`just` lists them all): `just doctor`, `just audit`, `just test`, `just lint`, `just plan`, `just brain-drift`, `just brew-check`.
+The same checks are available as `just` recipes (`just` lists them all): `just doctor`, `just audit`, `just test`, `just lint`, `just plan`, `just brain-drift`, `just brew-check`, `just claude-doctor`.
+
+`just claude-doctor` (also a section of `doctor.sh`) is read-only: it compares `~/.claude/settings.json` with the template plus the private overlay and reports local-only keys and permission entries, hook scripts that no longer exist, and enabled plugins missing from the cache.
+
+`just update` (`scripts/update.sh`) upgrades Homebrew and the Brewfile, Oh My Zsh, TPM plugins, VS Code extensions and Claude marketplaces, running heavy steps under `nice -n 15`. It skips missing tools and never runs `brew bundle cleanup`.
 
 `brain-template/bin/scripts/*.mjs` and `brain-template/bin/tests/*.test.mjs` are kept byte-identical to the installed brain. After changing either on a machine, pull them back in:
 
@@ -140,6 +145,9 @@ scripts/                   install phases, audit, inventory, doctor, brain-templ
 config/claude/             portable Claude settings, ask rules for infra/DB writes, tsc hook, generic subagents
 config/claude/agents/      generic subagent definitions (dev, reviewer, runner, scout, sim-qa)
 scripts/export-claude-private.sh  copies listed $HOME Claude files into the private brain's claude-home/
+scripts/install-claude-plugins.sh registers declared Claude marketplaces and installs enabled plugins
+scripts/claude-doctor.mjs         read-only settings/hook/plugin drift report (shares claude-settings-merge.mjs)
+scripts/update.sh                 `just update` maintenance upgrades
 scripts/merge-claude-overlay.mjs  merges a private overlay (~/Obsidian/brain/bin/state/claude-settings.overlay.json, e.g. autoMode) into ~/.claude/settings.json
 config/codex/              portable Codex settings and agent contract
 brain-template/            data-free living-brain software (bin/scripts, bin/state, bin/docs)

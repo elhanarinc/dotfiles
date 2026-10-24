@@ -7,6 +7,7 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { applyOverlay } from './claude-settings-merge.mjs';
 
 const home = os.homedir();
 const overlayPath = process.argv[2] ?? path.join(home, 'Obsidian/brain/bin/state/claude-settings.overlay.json');
@@ -17,26 +18,9 @@ if (!fs.existsSync(overlayPath)) {
   process.exit(0);
 }
 
-const isObject = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
-
-function merge(target, overlay) {
-  for (const [key, value] of Object.entries(overlay)) {
-    if (Array.isArray(value) && Array.isArray(target[key])) {
-      target[key] = [...target[key], ...value.filter((v) => !target[key].includes(v))];
-    } else if (isObject(value) && isObject(target[key])) {
-      merge(target[key], value);
-    } else {
-      target[key] = value;
-    }
-  }
-  return target;
-}
-
 const overlay = JSON.parse(fs.readFileSync(overlayPath, 'utf8'));
 const target = fs.existsSync(targetPath) ? JSON.parse(fs.readFileSync(targetPath, 'utf8')) : {};
-const { autoMode, ...rest } = overlay;
-merge(target, rest);
-if (autoMode) target.autoMode = autoMode;
+applyOverlay(target, overlay);
 
 const tmp = `${targetPath}.tmp-${process.pid}`;
 fs.writeFileSync(tmp, `${JSON.stringify(target, null, 2)}\n`);

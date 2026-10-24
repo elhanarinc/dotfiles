@@ -4,6 +4,22 @@ DOTFILES_DIR="${DOTFILES_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 source "$DOTFILES_DIR/scripts/lib.sh"
 detect_os
 phase="${1:-brew}"
+
+# Homebrew and most formulae need the Xcode Command Line Tools. Wait for the
+# GUI installer in the foreground, bounded, before the brew phase does anything.
+ensure_xcode_clt() {
+  xcode-select -p >/dev/null 2>&1 && return 0
+  if [[ "${DRY_RUN:-0}" == 1 ]]; then info "would run xcode-select --install and wait for the Command Line Tools"; return 0; fi
+  info "installing Xcode Command Line Tools (complete the macOS dialog)"
+  xcode-select --install >/dev/null 2>&1 || true
+  local waited=0 interval="${XCODE_CLT_POLL_SECONDS:-10}" limit="${XCODE_CLT_TIMEOUT_SECONDS:-1800}"
+  while ! xcode-select -p >/dev/null 2>&1; do
+    (( waited >= limit )) && die "Xcode Command Line Tools were not installed after $((limit / 60)) min; run xcode-select --install, then re-run ./install.sh"
+    sleep "$interval"; waited=$((waited + interval))
+  done
+  success "Xcode Command Line Tools installed"
+}
+ensure_xcode_clt
 if ! command_exists brew; then
   if [[ "${DRY_RUN:-0}" == 1 ]]; then info "would install Homebrew from brew.sh"; exit 0; fi
   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"

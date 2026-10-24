@@ -16,6 +16,8 @@ for agent in dev reviewer runner scout sim-qa; do
 done
 # Private, machine/company-specific settings (e.g. autoMode) live outside this public repo.
 if command_exists node; then run node "$DOTFILES_DIR/scripts/merge-claude-overlay.mjs"; fi
+# Download the plugins the merged settings declare (statusLine depends on claude-hud).
+"$DOTFILES_DIR/scripts/install-claude-plugins.sh" || warn "Claude plugin bootstrap reported a problem"
 ensure_dir "$HOME/.codex"
 copy_template "$DOTFILES_DIR/config/codex/config.toml" "$HOME/.codex/config.toml"
 copy_template "$DOTFILES_DIR/config/codex/hooks.json" "$HOME/.codex/hooks.json"

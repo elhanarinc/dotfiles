@@ -54,3 +54,11 @@ brew-check:
 # Copy private Claude files listed in the brain's claude-home.list into the private brain
 claude-private-export:
     ./scripts/export-claude-private.sh
+
+# Read-only: live ~/.claude/settings.json vs template + brain overlay (local permissions, dead hook paths, missing plugins)
+claude-doctor:
+    node scripts/claude-doctor.mjs
+
+# Upgrade Homebrew + Brewfile, Oh My Zsh, TPM, VS Code extensions, Claude marketplaces (never cleanup)
+update:
+    ./scripts/update.sh

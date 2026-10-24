@@ -56,4 +56,11 @@ else
   success "no installer appends in tracked shell files"
 fi
 
+# --- drift: does ~/.claude/settings.json still match template + overlay? ----
+if command_exists node; then
+  node "$DOTFILES_DIR/scripts/claude-doctor.mjs" || true
+else
+  warn "node missing: skipped claude settings check"
+fi
+
 exit 0

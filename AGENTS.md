@@ -41,6 +41,8 @@ The `*.mjs` files under `brain-template/bin/scripts/` are the *real* scripts, ke
 Public vs private split: generic Claude pieces (settings, subagents in `config/claude/agents/`) live here; anything private or company-specific (autoMode rules, private or third-party skills, workspace `CLAUDE.md` files) lives in the private brain as `claude-settings.overlay.json` and `bin/state/claude-home/`.
 
 - Restore: `BRAIN_REPO=... ./install.sh --only brain` clones the private brain, merges the overlay, and restores claude-home into `$HOME` without overwriting.
+- Plugins: `scripts/install-claude-plugins.sh` (called by the `ai` phase) installs what `enabledPlugins` declares; failures only warn. `just claude-doctor` is the read-only drift check; the merge logic lives in `scripts/claude-settings-merge.mjs` and is shared with `merge-claude-overlay.mjs`.
+- Maintenance: `just update` (`scripts/update.sh`) upgrades tools; it must never clean up or remove anything.
 - Export: `just claude-private-export` (`scripts/export-claude-private.sh`) copies the paths listed in `bin/state/claude-home.list` into the private brain; commit it there by hand.
 
 Two deliberate exceptions to that parity, both code-only:
