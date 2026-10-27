@@ -1,0 +1,35 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "default_agent": "orchestrator",
+  // Pin models so nothing falls back to free/unavailable defaults (iceman-contributor-free 503s).
+  "model": "opencode-go/deepseek-v4.1-flash",
+  "agents": {
+    "title": { "model": "opencode-go/glm-5.3-flash" },
+    "build": { "model": "opencode-go/deepseek-v4.1-flash" },
+    "general": { "model": "opencode-go/mimo-v2.6-flash" },
+    "explore": { "model": "opencode-go/qwen3.8-flash" }
+  },
+  "plugins": [
+    "superpowers@git+https://github.com/obra/superpowers.git"
+  ],
+  "mcp": {
+    "servers": {
+      "rea": { "type": "local", "command": ["npx", "-y", "rea-agents@6.8.0", "mcp"] },
+      "context7": { "type": "remote", "url": "https://mcp.context7.com/mcp", "disabled": true }
+    }
+  },
+  // Order matters (assumed last-match-wins; verified by canary test in Task 2). Specific rules last.
+  "permissions": [
+    { "action": "shell", "resource": "*", "effect": "ask" },
+    { "action": "shell", "resource": "git status*", "effect": "allow" },
+    { "action": "shell", "resource": "git diff*", "effect": "allow" },
+    { "action": "shell", "resource": "git log*", "effect": "allow" },
+    { "action": "shell", "resource": "ls *", "effect": "allow" },
+    { "action": "shell", "resource": "rm -rf *", "effect": "deny" },
+    { "action": "shell", "resource": "git push --force*", "effect": "deny" },
+    { "action": "read", "resource": "**/service.json", "effect": "deny" },
+    { "action": "read", "resource": "**/auth.json", "effect": "deny" },
+    { "action": "shell", "resource": "*service.json*", "effect": "deny" },
+    { "action": "shell", "resource": "*auth.json*", "effect": "deny" }
+  ]
+}

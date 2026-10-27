@@ -46,6 +46,7 @@ macOS only, Apple Silicon first; everything is installed through Homebrew where 
 - Shell: Oh My Zsh, autosuggestions, syntax highlighting, fzf-tab, you-should-use, Starship, NVM, TPM, and fzf integration.
 - Allowlisted dotfile links with timestamped backups under `~/.dotfiles_backup/`.
 - VS Code settings, MCP template, snippets, and extensions.
+- OpenCode 2 (pinned installer; `OPENCODE_VERSION` overrides) with generic agents, plugin and commands in `config/opencode/`, linked per file into `~/.config/opencode/` (never the directory).
 - Portable Claude/Codex defaults and living-brain hooks without authentication or trust state. The `ai` phase also registers the Claude marketplaces declared in settings and installs the enabled plugins (the statusLine needs claude-hud).
 - The Xcode Command Line Tools: the `brew` phase runs `xcode-select --install` when they are missing and waits (up to 30 min) before touching Homebrew.
 - A new, empty brain at `~/Obsidian/brain`; existing brain content is always preserved.
@@ -70,6 +71,7 @@ Private brain and Claude files (all optional, all kept outside this repo):
 - `BRAIN_REPO=git@github.com:<you>/brain.git ./install.sh` clones your private brain instead of copying the empty template (only when `~/Obsidian/brain` does not exist yet).
 - Files under `<brain>/bin/state/claude-home/` are restored into `$HOME` at the same relative path (e.g. `.claude/skills/x/SKILL.md`), never overwriting existing files. The brain phase also merges `claude-settings.overlay.json` into `~/.claude/settings.json`.
 - `just claude-private-export` is the reverse: it copies the `$HOME`-relative paths listed (one per line, files or directories) in `<brain>/bin/state/claude-home.list` into `claude-home/`, overwriting what is there.
+- OpenCode follows the same split: private files (e.g. personal-projects permissions) live in `<brain>/bin/state/opencode-home/config/` as `$HOME`-relative paths, restored by the brain phase and exported by `just opencode-private-export` (list: `<brain>/bin/state/opencode-home.list`).
 - claude-home can hold any private Claude file: private or third-party skills, workspace `CLAUDE.md` files. After changing one, run `just claude-private-export` and commit the private brain; this is not automatic.
 - Generic subagents (`dev`, `reviewer`, `runner`, `scout`, `sim-qa`) from `config/claude/agents/` are installed into `~/.claude/agents/` if missing.
 

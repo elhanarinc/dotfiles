@@ -8,6 +8,11 @@ fi
 if ! command_exists codex; then
   if command_exists brew; then run brew install --cask codex; else warn "Codex requires Homebrew on macOS"; fi
 fi
+# OpenCode 2 (the v1 installer at opencode.ai/install refuses 2.x). Pinned; override with OPENCODE_VERSION.
+if [[ ! -x "$HOME/.opencode/bin/opencode" ]] && ! command_exists opencode; then
+  if [[ "${DRY_RUN:-0}" == 1 ]]; then info "would install OpenCode ${OPENCODE_VERSION:-2.2.0} using the official v2 installer"
+  else curl -fsSL https://opencode.ai/v2/install | bash -s -- --version "${OPENCODE_VERSION:-2.2.0}" || warn "OpenCode install failed"; fi
+fi
 ensure_dir "$HOME/.claude"
 copy_template "$DOTFILES_DIR/config/claude/settings.json" "$HOME/.claude/settings.json"
 copy_template "$DOTFILES_DIR/config/claude/hooks/tsc-check.mjs" "$HOME/.claude/hooks/tsc-check.mjs"

@@ -25,3 +25,17 @@ if [[ -d "$DOTFILES_DIR/.config/Code/User/snippets" ]]; then
 fi
 copy_template "$DOTFILES_DIR/.zshrc.local.example" "$HOME/.zshrc.local"
 copy_template "$DOTFILES_DIR/.gitconfig.local.example" "$HOME/.gitconfig.local"
+
+# OpenCode: link PER FILE (never the directory: service.json, node_modules and
+# autoloaded plugins/* live there). package.json is state-like
+# (opencode rewrites it), so they are copied once instead of linked.
+oc_src="$DOTFILES_DIR/config/opencode"
+if [[ -d "$oc_src" ]]; then
+  while IFS= read -r -d '' f; do
+    rel="${f#"$oc_src"/}"
+    case "$rel" in
+      package.json) copy_template "$f" "$HOME/.config/opencode/$rel" ;;
+      *) link_file "$f" "$HOME/.config/opencode/$rel" ;;
+    esac
+  done < <(find "$oc_src" -type f -print0 | sort -z)
+fi

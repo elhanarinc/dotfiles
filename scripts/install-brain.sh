@@ -37,6 +37,14 @@ if [[ -d "$claude_home" ]]; then
   done < <(find "$claude_home" -type f -print0)
 fi
 
+# Private OpenCode files (e.g. personal-projects permissions), same mechanism: $HOME-relative, never overwritten.
+opencode_home="$brain_dir/bin/state/opencode-home/config"
+if [[ -d "$opencode_home" ]]; then
+  while IFS= read -r -d '' f; do
+    copy_template "$f" "$HOME/${f#"$opencode_home"/}"
+  done < <(find "$opencode_home" -type f -print0)
+fi
+
 # Merge the private settings overlay now that the brain exists (the ai phase runs earlier).
 if command_exists node; then
   run node "$DOTFILES_DIR/scripts/merge-claude-overlay.mjs" "$brain_dir/bin/state/claude-settings.overlay.json"

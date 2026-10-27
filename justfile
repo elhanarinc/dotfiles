@@ -62,3 +62,7 @@ claude-doctor:
 # Upgrade Homebrew + Brewfile, Oh My Zsh, TPM, VS Code extensions, Claude marketplaces (never cleanup)
 update:
     ./scripts/update.sh
+
+# Copy private OpenCode files listed in the brain's opencode-home.list into the private brain
+opencode-private-export:
+    ./scripts/export-opencode-private.sh
