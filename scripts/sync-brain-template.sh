@@ -46,6 +46,8 @@ if [[ -d "$tsrc" ]]; then
   mkdir -p "$tdst"
   for file in "$tsrc"/*.test.mjs; do
     name="$(basename "$file")"
+    # Integration tests that need the owner's repos and private fixtures stay private.
+    case "$name" in agy-hooks.test.mjs|opencode-hooks.test.mjs) continue ;; esac
     if [[ ! -f "$tdst/$name" ]]; then
       printf 'new      tests/%s\n' "$name"; changed=1
     elif ! cmp -s "$file" "$tdst/$name"; then
