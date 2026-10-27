@@ -8,7 +8,7 @@ mkdir -p "$oc"; printf secret > "$oc/service.json"; printf old > "$oc/AGENTS.md"
 "$REPO_ROOT/scripts/link-dotfiles.sh" >/dev/null
 assert_symlink "$oc/opencode.jsonc"
 assert_symlink "$oc/agents/dev.md"
-assert_symlink "$oc/plugins/brain/index.js"
+assert_symlink "$oc/plugins/brain"
 [[ ! -L "$oc" ]] || fail "opencode directory must not be a symlink"
 [[ ! -L "$oc/package.json" && -f "$oc/package.json" ]] || fail "package.json should be a copy"
 [[ "$(cat "$oc/service.json")" == secret ]] || fail "service.json touched"

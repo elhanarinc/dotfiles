@@ -56,7 +56,7 @@ oc_unlinked=0
 if [[ -d "$DOTFILES_DIR/config/opencode" ]]; then
   while IFS= read -r -d '' f; do
     rel="${f#"$DOTFILES_DIR"/config/opencode/}"
-    case "$rel" in package.json) continue ;; esac
+    case "$rel" in package.json) continue ;; plugins/*/*) d="${rel#plugins/}"; rel="plugins/${d%%/*}" ;; esac
     t="$HOME/.config/opencode/$rel"
     if [[ -L "$t" ]] && [[ "$(readlink "$t")" == "$DOTFILES_DIR"/* ]]; then continue; fi
     [[ -e "$t" ]] && { warn "opencode: not linked to this repo: ${t/#$HOME/~}"; oc_unlinked=$((oc_unlinked + 1)); }
