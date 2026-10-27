@@ -1,5 +1,19 @@
-# Portable defaults only. Authentication and project trust remain local.
-model_reasoning_effort = "high"
+# Portable defaults only. Authentication, project trust, app-managed plugins and MCP stay local.
+model = "gpt-6-astra"
+model_reasoning_effort = "low"
+personality = "pragmatic"
+approvals_reviewer = "user"
+
+[notice]
+hide_rate_limit_model_nudge = true
+
+[tui]
+status_line = ["model-with-reasoning", "context-remaining", "current-dir", "model-name", "project-root", "context-used", "five-hour-limit"]
+terminal_title = ["spinner", "project-name"]
 
 [features]
 shell_snapshot = true
+memories = false
+prevent_idle_sleep = true
+terminal_resize_reflow = true
+js_repl = false
