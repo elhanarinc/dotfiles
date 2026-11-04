@@ -1,0 +1,27 @@
+{
+  "brain-brief": {
+    "enabled": true,
+    "PreInvocation": [
+      {
+        "type": "command",
+        "command": "node ~/Obsidian/brain/bin/scripts/agy-brief.mjs",
+        "timeout": 10
+      }
+    ]
+  },
+  "brain-reindex": {
+    "enabled": true,
+    "PostToolUse": [
+      {
+        "matcher": "write_to_file|replace_file_content|run_command",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ~/Obsidian/brain/bin/scripts/agy-reindex-hook.mjs",
+            "timeout": 15
+          }
+        ]
+      }
+    ]
+  }
+}

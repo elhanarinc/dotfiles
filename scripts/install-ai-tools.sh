@@ -28,3 +28,18 @@ copy_template "$DOTFILES_DIR/config/codex/config.toml" "$HOME/.codex/config.toml
 copy_template "$DOTFILES_DIR/config/codex/hooks.json" "$HOME/.codex/hooks.json"
 copy_template "$DOTFILES_DIR/config/codex/AGENTS.md" "$HOME/.codex/AGENTS.md"
 warn "Existing AI configuration and authentication are preserved; review/merge managed templates manually if files already exist"
+# Antigravity (agy): merge the brain hooks into ~/.gemini/config/hooks.json by entry name.
+# Existing entries (e.g. agy-live-hud) are kept as-is; only missing brain-* entries are added.
+if command_exists node; then
+  ensure_dir "$HOME/.gemini/config"
+  run node -e '
+    const fs = require("fs");
+    const [src, dst] = process.argv.slice(1);
+    const add = JSON.parse(fs.readFileSync(src, "utf8"));
+    let cur = {};
+    try { cur = JSON.parse(fs.readFileSync(dst, "utf8")); } catch {}
+    let changed = false;
+    for (const [k, v] of Object.entries(add)) if (!(k in cur)) { cur[k] = v; changed = true; }
+    if (changed || !fs.existsSync(dst)) fs.writeFileSync(dst, JSON.stringify(cur, null, 2) + "\n");
+  ' "$DOTFILES_DIR/config/gemini/hooks.json" "$HOME/.gemini/config/hooks.json"
+fi
