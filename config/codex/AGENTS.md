@@ -15,3 +15,13 @@
 ```bash
 /opt/homebrew/bin/node "$HOME/Obsidian/brain/bin/scripts/link-leaf.mjs" <workspace> "$PWD"
 ```
+
+## Brain recall (search before answering)
+
+The SessionStart context only lists one line per note for the current leaf. Before answering about past decisions, preferences, constraints or project status, and before proposing any idea, tool, channel or spend, search the brain (the proposal may already be dead with data):
+
+```bash
+node "$HOME/Obsidian/brain/bin/scripts/search.mjs" "<terms>"   # --ws <ws> | --all | --type feedback | --limit N | --body
+```
+
+Query in both Turkish and English. `feedback`/`user` notes are standing rules; `[archive]` hits are retired. Skip it for plain code reading, debugging and mechanical edits.
