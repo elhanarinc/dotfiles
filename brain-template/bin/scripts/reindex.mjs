@@ -32,6 +32,8 @@ for (const leaf of leaves) {
   totalBytes += bytes;
   const noHook = built.notes.filter((n) => !n.hook);
   if (noHook.length) warnings.push(`${leaf.ws}/${leaf.label}: index_hook yok → ${noHook.map((n) => n.file).join(', ')}`);
+  if (built.overLines) warnings.push(`${leaf.ws}/${leaf.label}: ${built.lineCount} satır > 200 — harness sondan düşürür, not arşivle`);
+  else if (built.nearLines) warnings.push(`${leaf.ws}/${leaf.label}: ${built.lineCount} satır (>190, tavan 200) — arşivlemeyi planla`);
   const mark = stale.includes(`${leaf.ws}/${leaf.label}`) ? (checkOnly ? ' BAYAT' : ' güncellendi') : '';
   console.log(`${`${leaf.ws}/${leaf.label}`.padEnd(38)} ${String(built.notes.length).padStart(3)} not  ${String(bytes).padStart(6)} bayt${mark}`);
 }

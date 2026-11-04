@@ -217,6 +217,10 @@ export const INDEX_LABEL = {
 // sayıyor. Türkçe (ş/ğ/ü/ö/ç/İ) 2 bayt olduğu için bayt üzerinden sınırlamak %5-10 yanıltır.
 // Tavan 24,4 KiB ≈ 24.986 karakter; 24.000'de duruyoruz (marj bilinçli).
 export const INDEX_BUDGET_CHARS = 24000;
+// Harness yalnız MEMORY.md'nin İLK 200 SATIRINI yüklüyor (karakter bütçesinden bağımsız ikinci tavan).
+// Satır tavanı kırpmayla çözülmez (hook kısaltmak satır sayısını değiştirmez) → arşivle/birleştir.
+export const INDEX_MAX_LINES = 200;
+export const INDEX_WARN_LINES = 190;
 // Satır başı tavan. Kırpılan şey YALNIZ hook metni — link ve başlık asla bozulmaz, çünkü
 // kaybolmaması gereken şey işaretçinin KENDİSİ. Kırpılmış hook > düşmüş satır.
 // SABİT tavan ölçeklenmiyor: 150 notta 180 yetiyor, 180 notta yetmez. Bu yüzden tavan
@@ -270,7 +274,8 @@ export function buildIndex(dir) {
     max -= 10;
     text = renderIndex(notes, max);
   }
-  return { text, notes, lineMax: max, overBudget: text.length > INDEX_BUDGET_CHARS };
+  const lineCount = text.split('\n').length;
+  return { text, notes, lineMax: max, overBudget: text.length > INDEX_BUDGET_CHARS, lineCount, overLines: lineCount > INDEX_MAX_LINES, nearLines: lineCount > INDEX_WARN_LINES };
 }
 
 // Yarım yazılmış MEMORY.md diye bir şey olmasın: aynı anda iki oturum yazarsa bile

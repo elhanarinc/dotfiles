@@ -11,6 +11,7 @@ import { writeFileSync, rmSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import {
   fitIndexHook, buildIndex, INDEX_LINE_MAX, INDEX_LINE_FLOOR, INDEX_BUDGET_CHARS,
+  INDEX_MAX_LINES, INDEX_WARN_LINES,
 } from '../scripts/lib.mjs';
 
 const DIR = join(import.meta.dirname, 'tmp-index-budget');
@@ -77,6 +78,22 @@ eq('taban aşılınca tavan tabanda durur', built.lineMax, INDEX_LINE_FLOOR);
 eq('taban aşılınca overBudget işaretlenir', built.overBudget, true);
 ok('overBudget olsa bile satırlar yine de üretilir (işaretçi kaybolmaz)',
   built.text.split('\n').filter((l) => l.startsWith('- [')).length === 400);
+
+// Satır tavanı (harness ilk 200 satırı yükler): karakter bütçesi tutsa bile satır sayısı aşılabilir.
+reset();
+for (let i = 0; i < 230; i++) note(i, 5);
+built = buildIndex(DIR);
+eq('karakter bütçesi tutuyor', built.overBudget, false);
+ok('satır sayısı hesaplanır', built.lineCount > INDEX_MAX_LINES, `${built.lineCount}`);
+eq('200 satır aşılınca overLines', built.overLines, true);
+reset();
+for (let i = 0; i < 100; i++) note(i, 5);
+built = buildIndex(DIR);
+eq('az satırda overLines false', [built.overLines, built.nearLines], [false, false]);
+reset();
+for (let i = 0; i < INDEX_WARN_LINES - 3; i++) note(i, 5);
+built = buildIndex(DIR);
+eq('190 üstü uyarı bölgesi (overLines değil)', [built.overLines, built.nearLines], [false, true]);
 
 // Boş leaf null döner (mevcut sözleşme korunuyor)
 reset();
