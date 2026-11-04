@@ -27,6 +27,11 @@ ensure_dir "$HOME/.codex"
 copy_template "$DOTFILES_DIR/config/codex/config.toml" "$HOME/.codex/config.toml"
 copy_template "$DOTFILES_DIR/config/codex/hooks.json" "$HOME/.codex/hooks.json"
 copy_template "$DOTFILES_DIR/config/codex/AGENTS.md" "$HOME/.codex/AGENTS.md"
+# brain-recall lives in the private brain/Claude setup, so link it by $HOME path instead of vendoring it.
+if [[ -f "$HOME/.claude/skills/brain-recall/SKILL.md" ]]; then
+  ensure_dir "$HOME/.codex/skills"
+  [[ -e "$HOME/.codex/skills/brain-recall" || -L "$HOME/.codex/skills/brain-recall" ]] || run ln -s "$HOME/.claude/skills/brain-recall" "$HOME/.codex/skills/brain-recall"
+fi
 warn "Existing AI configuration and authentication are preserved; review/merge managed templates manually if files already exist"
 # Antigravity (agy): merge the brain hooks into ~/.gemini/config/hooks.json by entry name.
 # Existing entries (e.g. agy-live-hud) are kept as-is; only missing brain-* entries are added.
