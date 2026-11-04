@@ -13,6 +13,11 @@
 //      cwd = VAULT. cwd hiçbir iş alanı kökünün altında olmadığı için brief/nudge/capture
 //      hook'ları kapsam dışı kalıp SUSAR (özyineleme yok: küratörün kendi oturumu inbox'a
 //      düşmez, nudge exit 2 ile -p oturumunu döngüye sokmaz).
+//      Parti başına yalıtım: parti düşerse kayıtlar TEK TEK yeniden denenir. Tek kayıt model
+//      tarafından REDDEDİLİRSE (güvenlik sınıflandırıcısı, stop_reason=refusal) `model:refused`
+//      ile kapatılıp atlanır (zehirli kayıt kuyruğu tıkamasın); başka hatada kayıt pending
+//      kalır, ağ/zaman aşımı hatasında tur durur. Model turundan önce api.anthropic.com DNS
+//      kontrolü yapılır; ağ yoksa tur atlanır (yalnız süpürme + reindex + commit).
 //   3. reindex + curator-status.json + git commit/push (kullanıcı 2026-10-09'da onayladı,
 //      YALNIZ brain reposu için).
 //
@@ -257,11 +262,12 @@ export function parseResults(text) {
   } catch { return null; }
 }
 
-function runModel(prompt) {
+export function runModel(prompt) {
   const custom = process.env.BRAIN_CURATOR_CLAUDE;
   const cmd = custom || 'claude';
   const args = custom ? [] : [
     '-p', '--output-format', 'json',
+    '--model', 'sonnet',
     '--permission-mode', 'acceptEdits',
     '--allowedTools', `Read,Glob,Grep,Write,Edit,Bash(node bin/scripts/search.mjs:*),Bash(node ${VAULT}/bin/scripts/search.mjs:*)`,
     '--max-turns', '80',
@@ -271,11 +277,76 @@ function runModel(prompt) {
     maxBuffer: 64 * 1024 * 1024, shell: Boolean(custom),
     env: { ...process.env, BRAIN_CURATOR: '1' },
   });
-  if (r.error) throw new Error(`model çalışmadı: ${r.error.message}`);
-  if (r.status !== 0) throw new Error(`model exit ${r.status}: ${clip((r.stderr || r.stdout || '').trim(), 300)}`);
+  if (r.error) {
+    const err = new Error(`model çalışmadı: ${r.error.message}`);
+    err.network = true; // zaman aşımı / spawn hatası: sıradaki kayıtlarda da aynısı olur
+    throw err;
+  }
+  if (r.status !== 0) {
+    const err = new Error(`model exit ${r.status}: ${clip((r.stderr || r.stdout || '').trim(), 300)}`);
+    err.refusal = /refusal/i.test(`${r.stdout || ''}\n${r.stderr || ''}`);
+    throw err;
+  }
   let text = r.stdout;
   try { const j = JSON.parse(r.stdout); if (typeof j.result === 'string') text = j.result; } catch { /* düz metin */ }
   return text;
+}
+
+// ---------- ağ kontrolü + yalıtılmış parti turu ----------
+
+// Uyku/DarkWake'te ağ yokken `claude -p` ENOTFOUND'da 20 dk asılıyordu; önce DNS'e bak.
+export function networkOk(host = 'api.anthropic.com') {
+  const r = spawnSync(process.execPath, ['-e',
+    `require('node:dns').lookup(process.argv[1],(e)=>process.exit(e?1:0))`, host], { timeout: 10000 });
+  return r.status === 0;
+}
+
+const isNetErr = (e) => Boolean(e.network) || /ENOTFOUND|ETIMEDOUT|EAI_AGAIN|ECONN|timed out/i.test(e.message || '');
+
+// Bir kayıt grubunu modele ver, sonuçları işle. Hata atarsa HİÇBİR kayıt işaretlenmemiştir.
+function runItems(recs, { digestDir, startIdx, run, status, day, log }) {
+  const items = recs.map((rec, k) => {
+    const digest = join(digestDir, `${startIdx + k}-${rec.file}`);
+    writeFileSync(digest, buildDigest(rec));
+    return { record: rec.file, digest: digest.slice(VAULT.length + 1), leaf: leafFor(rec), rec };
+  });
+  const results = parseResults(run(buildPrompt(items)));
+  if (!results) throw new Error(`model JSON döndürmedi (${items.map((i) => i.record).join(', ')})`);
+  for (const it of items) {
+    const res = results.find((x) => x.record === it.record);
+    if (!res) continue; // cevapsız kayıt bir sonraki çalıştırmaya kalır
+    const notes = (Array.isArray(res.notes) ? res.notes : []).map(String);
+    markCurated(it.rec, { by: `model:${res.action}`, notes });
+    status.curated++;
+    if (res.action !== 'none') status.written.push(...notes.map((n) => `${res.action === 'updated' ? '~' : '+'}${n}`));
+    log(`- ${day} · ${it.rec.ws}/${it.record} → ${res.action}${notes.length ? `: ${notes.join(', ')}` : ''} — ${res.why || ''}`);
+  }
+}
+
+// Partiler halinde çalıştır; parti düşerse tek tek dene. Hata metinlerini döndürür.
+export function curateLoop(todo, { digestDir, status, day, log = logLine, run = runModel, batch = BATCH }) {
+  const errors = [];
+  const ctx = { digestDir, run, status, day, log };
+  for (let i = 0; i < todo.length; i += batch) {
+    const recs = todo.slice(i, i + batch);
+    try { runItems(recs, { ...ctx, startIdx: i }); continue; } catch (e) {
+      // ağ/zaman aşımında tek tek denemek her kayıtta aynı 20 dk'yı yakar
+      if (isNetErr(e)) { errors.push(`parti ${i / batch + 1}: ${e.message}`, 'ağ/zaman aşımı, tur durduruldu'); return errors; }
+    }
+    for (let k = 0; k < recs.length; k++) {
+      const rec = recs[k];
+      try { runItems([rec], { ...ctx, startIdx: i + k }); } catch (e) {
+        if (e.refusal) {
+          markCurated(rec, { by: 'model:refused', notes: [] });
+          log(`- ${day} · ${rec.ws}/${rec.file} → atlandı: model reddetti (refusal)`);
+          continue;
+        }
+        errors.push(`${rec.ws}/${rec.file}: ${e.message}`);
+        if (isNetErr(e)) { errors.push('ağ/zaman aşımı, tur durduruldu'); return errors; }
+      }
+    }
+  }
+  return errors;
 }
 
 // ---------- yardımcılar ----------
@@ -346,36 +417,23 @@ async function main() {
     if (dryRun) { todo.forEach((r) => console.log(`  ${r.ws}/${r.file} → ${leafFor(r)}`)); return; }
     if (!dryRun) for (const r of sw.closed) logLine(`- ${day} · ${r.ws}/${r.file} → süpürme: oturumda yazılmış (${noteList(r.fm).join(', ')})`);
 
-    rmSync(DIGEST_DIR, { recursive: true, force: true });
-    mkdirSync(DIGEST_DIR, { recursive: true });
-    for (let i = 0; i < todo.length; i += BATCH) {
-      const batch = todo.slice(i, i + BATCH);
-      const items = batch.map((rec, k) => {
-        const digest = join(DIGEST_DIR, `${i + k}-${rec.file}`);
-        writeFileSync(digest, buildDigest(rec));
-        return { record: rec.file, digest: digest.slice(VAULT.length + 1), leaf: leafFor(rec), rec };
-      });
-      const results = parseResults(runModel(buildPrompt(items)));
-      if (!results) throw new Error(`model JSON döndürmedi (parti ${i / BATCH + 1})`);
-      for (const it of items) {
-        const res = results.find((x) => x.record === it.record);
-        if (!res) continue; // cevapsız kayıt bir sonraki çalıştırmaya kalır
-        const notes = (Array.isArray(res.notes) ? res.notes : []).map(String);
-        markCurated(it.rec, { by: `model:${res.action}`, notes });
-        status.curated++;
-        if (res.action !== 'none') status.written.push(...notes.map((n) => `${res.action === 'updated' ? '~' : '+'}${n}`));
-        logLine(`- ${day} · ${it.rec.ws}/${it.record} → ${res.action}${notes.length ? `: ${notes.join(', ')}` : ''} — ${res.why || ''}`);
-      }
+    if (todo.length && !process.env.BRAIN_CURATOR_CLAUDE && !networkOk()) {
+      status.error = 'ağ yok, model turu atlandı';
+    } else if (todo.length) {
+      rmSync(DIGEST_DIR, { recursive: true, force: true });
+      mkdirSync(DIGEST_DIR, { recursive: true });
+      const errs = curateLoop(todo, { digestDir: DIGEST_DIR, status, day });
+      if (errs.length) status.error = errs.join(' · ');
     }
     rmSync(DIGEST_DIR, { recursive: true, force: true });
     spawnSync(process.execPath, [join(VAULT, 'bin', 'scripts', 'reindex.mjs')], { cwd: VAULT });
-    status.pending_left = pendingForModel(listRecords()).length;
     status.ok = true;
   } catch (e) {
     status.error = String(e.message || e);
     console.error(status.error);
   } finally {
     if (!dryRun) {
+      try { status.pending_left = pendingForModel(listRecords()).length; } catch { /* durum yazılsın */ }
       writeFileSync(STATUS_PATH, `${JSON.stringify(status, null, 2)}\n`);
       if (!noGit) {
         git('add', '-A');

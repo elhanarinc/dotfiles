@@ -8,7 +8,7 @@ import { writeFileSync, rmSync, mkdirSync, statSync, utimesSync, readFileSync, e
 import { join } from 'node:path';
 import {
   listRecords, sweep, pendingForModel, markCurated, condenseClaude, condenseCodex, fitDigest,
-  buildDigest, parseResults, MIN_AGE_MS, KEEP_DAYS,
+  buildDigest, parseResults, curateLoop, MIN_AGE_MS, KEEP_DAYS,
 } from '../scripts/curate.mjs';
 import { curatorLine } from '../scripts/lib.mjs';
 
@@ -95,6 +95,34 @@ eq('uzun özet baş+son tutuluyor, sınır aşılmıyor', [big.length < 1100, bi
 // --- model cevabı ---
 eq('JSON cevabı ön metinle bile ayrışıyor', parseResults('tamam:\n{"results":[{"record":"b.md","action":"none"}]}')?.length, 1);
 eq('bozuk cevap null (kayıt işaretlenmez)', parseResults('yapamadım'), null);
+
+// --- parti yalıtımı: refusal atlanır, diğer hata pending kalır (BRAIN_CURATOR_CLAUDE sahte komut) ---
+const fake = join(DIR, 'fake-claude.mjs');
+writeFileSync(fake, `import { readFileSync } from 'node:fs';
+const p = readFileSync(0, 'utf8');
+const names = [...p.matchAll(/^- (\\S+\\.md) ·/gm)].map((m) => m[1]);
+if (names.includes('zz-zehirli.md')) { console.log('{"stop_reason":"refusal","result":""}'); process.exit(1); }
+if (names.includes('zz-bozuk.md')) { console.error('boom'); process.exit(1); }
+console.log(JSON.stringify({ results: names.map((n) => ({ record: n, action: 'none', notes: [], why: 'x' })) }));
+`);
+mkdirSync(join(DIR, 'inbox2', 'ws'), { recursive: true });
+mkdirSync(join(DIR, 'dig'), { recursive: true });
+const rec2 = (name) => {
+  const p = join(DIR, 'inbox2', 'ws', name);
+  writeFileSync(p, `---\nended: ${iso(now - 2 * 864e5)}\nstatus: unprocessed\n---\n# gövde\n`);
+};
+['a1.md', 'zz-zehirli.md', 'a2.md', 'zz-bozuk.md', 'a3.md'].forEach(rec2);
+process.env.BRAIN_CURATOR_CLAUDE = `node ${fake}`;
+const st2 = { curated: 0, written: [] };
+const logs = [];
+const errs2 = curateLoop(listRecords(join(DIR, 'inbox2'), ['ws']), { digestDir: join(DIR, 'dig'), status: st2, day: 'D', log: (l) => logs.push(l) });
+delete process.env.BRAIN_CURATOR_CLAUDE;
+const after = Object.fromEntries(listRecords(join(DIR, 'inbox2'), ['ws']).map((r) => [r.file, r.fm]));
+eq('refusal: zehirli kayıt curated + model:refused', [after['zz-zehirli.md'].status, after['zz-zehirli.md'].curated_by], ['curated', 'model:refused']);
+eq('refusal: diğerleri işlendi', ['a1.md', 'a2.md', 'a3.md'].map((f) => after[f].status), ['curated', 'curated', 'curated']);
+eq('refusal: log satırı', logs.some((l) => l.includes('zz-zehirli.md') && l.includes('refusal')), true);
+eq('refusal dışı hata: kayıt pending kalır, hata raporlanır', [after['zz-bozuk.md'].status, errs2.some((e) => e.includes('zz-bozuk.md')), pendingForModel(listRecords(join(DIR, 'inbox2'), ['ws'])).length], ['unprocessed', true, 1]);
+eq('curated sayacı (refused sayılmaz)', st2.curated, 3);
 
 // --- nabız satırı ---
 const sp = join(DIR, 'status.json');
