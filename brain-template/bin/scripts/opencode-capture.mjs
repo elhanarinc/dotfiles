@@ -1,11 +1,12 @@
 // opencode-capture.mjs — OpenCode için idempotent catch-up capture.
-// V2'de session-end olayı yok: her yeni oturum başında, önceki ve >=10 dk sessiz kalmış
-// üst-düzey oturumlar inbox'a yazılır. codex-capture ile aynı not biçimi/redaksiyon.
+// Tetikleyiciler: yeni oturum başı (catch-up) + plugin'in session.idle sonrası 10 dk gecikmeli
+// çağrısı. >=10 dk sessiz kalmış üst-düzey oturumlar inbox'a yazılır. codex-capture ile aynı not biçimi/redaksiyon.
 // Oturum kaynağı enjekte edilebilir: `store` ya bir dizin (içinde `<id>.json` export'ları),
 // ya da { list(): id[], get(id): export } nesnesi; verilmezse opencode CLI kullanılır.
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, unlinkSync, writeFileSync } from 'node:fs';
+import { closeSync, existsSync, mkdirSync, mkdtempSync, openSync, readFileSync, rmSync, readdirSync, renameSync, unlinkSync, writeFileSync } from 'node:fs';
 import { basename, dirname, isAbsolute, join, relative, resolve } from 'node:path';
+import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { INBOX_DIR, VAULT, contextForCwd, opsFromCommand, redactSecrets, syncIndexes } from './lib.mjs';
 import { renderInboxNote } from './codex-capture.mjs';
@@ -13,15 +14,30 @@ import { renderInboxNote } from './codex-capture.mjs';
 export const STATE_PATH = join(VAULT, 'bin', 'state', 'opencode-captured.json');
 const QUIET_MS = 10 * 60 * 1000;
 const MIN_PROMPTS = 1;
-const MAX_AGE_MS = 3 * 24 * 60 * 60 * 1000; // ilk çalıştırmada eski birikim inbox'ı doldurmasın
+// Eski 3 gün: kullanım boşluğundan önceki oturumlar sonsuza dek düşüyordu (2026-10-27 kaybı).
+// Dedupe state dosyasıyla; birikim MAX_PER_RUN ile akıtılır → geniş kesim güvenli.
+const MAX_AGE_MS = 90 * 24 * 60 * 60 * 1000;
 const MAX_PER_RUN = 10;
 const OPENCODE = process.env.OPENCODE_BIN || 'opencode';
 
-export const cliStore = (n = 30) => ({
+export const cliStore = (n = 100) => ({
   list: () => JSON.parse(execFileSync(OPENCODE, ['session', 'list', '--format', 'json', '-n', String(n)],
     { encoding: 'utf8', timeout: 8000 })).map((s) => s.id),
-  get: (id) => JSON.parse(execFileSync(OPENCODE, ['session', 'export', id],
-    { encoding: 'utf8', timeout: 8000, maxBuffer: 64 * 1024 * 1024 })),
+  // DİKKAT: `opencode session export` stdout PIPE'a yazınca ~320 KB'ta kesiliyor (büyük oturumlar
+  // sessizce parse edilemiyor ve hiç yakalanmıyordu). Dosyaya yönlendirmek tam çıktıyı verir.
+  get: (id) => {
+    const dir = mkdtempSync(join(tmpdir(), 'oc-export-'));
+    const file = join(dir, 'out.json');
+    const fd = openSync(file, 'w');
+    try {
+      execFileSync(OPENCODE, ['session', 'export', id], { stdio: ['ignore', fd, 'ignore'], timeout: 60000 });
+      closeSync(fd);
+      return JSON.parse(readFileSync(file, 'utf8'));
+    } finally {
+      try { closeSync(fd); } catch { /* zaten kapalı */ }
+      rmSync(dir, { recursive: true, force: true });
+    }
+  },
 });
 
 const dirStore = (dir) => ({
