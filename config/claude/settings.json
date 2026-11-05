@@ -422,6 +422,17 @@
           }
         ]
       }
+    ],
+    "SubagentStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "printf '%s' '{\"hookSpecificOutput\": {\"hookEventName\": \"SubagentStart\", \"additionalContext\": \"Language rule: write your final report/return to the orchestrator in Turkish. Keep verbatim (do not translate): code, identifiers, file paths, commands, log/test output lines, and any status keywords or headings the brief/template requires (e.g. DONE, DONE_WITH_CONCERNS, BLOCKED, NEEDS_CONTEXT, Approved, Issues).\"}}'",
+            "timeout": 5
+          }
+        ]
+      }
     ]
   },
   "enableArtifact": false,
