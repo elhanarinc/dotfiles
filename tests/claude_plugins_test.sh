@@ -22,7 +22,8 @@ out="$("$REPO_ROOT/scripts/install-claude-plugins.sh" 2>&1)"
 log="$(cat "$TEST_COMMAND_LOG")"
 assert_contains "$log" "claude plugin marketplace add jarrodwatts/claude-hud"
 assert_contains "$log" "claude plugin marketplace add anthropics/claude-plugins-official"
-assert_contains "$log" "claude plugin install superpowers@claude-plugins-official --scope user"
+assert_contains "$log" "claude plugin marketplace add obra/superpowers-marketplace"
+assert_contains "$log" "claude plugin install superpowers@superpowers-marketplace --scope user"
 assert_contains "$out" "plugin present: claude-hud@claude-hud"
 [[ "$log" != *"install claude-hud@claude-hud"* ]] || fail "reinstalled a present plugin"
 
@@ -85,7 +86,15 @@ doc="$(node "$REPO_ROOT/scripts/claude-doctor.mjs" 2>&1)"
 assert_contains "$doc" "only in live: localKey"
 assert_contains "$doc" "Bash(local-only *)"
 assert_contains "$doc" "hook path missing"
-assert_contains "$doc" "plugin enabled but not installed: superpowers@claude-plugins-official"
+assert_contains "$doc" "plugin enabled but not installed: superpowers@superpowers-marketplace"
 [[ "$doc" != *"overlay-ask"* ]] || fail "overlay entry reported as local"
 [[ "$before" == "$(cksum < "$HOME/.claude/settings.json")" ]] || fail "claude-doctor modified settings"
+# key order alone is not drift
+node -e '
+const fs=require("fs");const s=JSON.parse(fs.readFileSync(process.argv[1]));
+s.permissions.ask.push("Bash(overlay-ask)");
+const ep=s.enabledPlugins;s.enabledPlugins=Object.fromEntries(Object.entries(ep).reverse());
+fs.writeFileSync(process.argv[2],JSON.stringify(s));' "$REPO_ROOT/config/claude/settings.json" "$HOME/.claude/settings.json"
+doc="$(node "$REPO_ROOT/scripts/claude-doctor.mjs" 2>&1)"
+[[ "$doc" != *"differs from expected"* ]] || fail "key order reported as drift: $doc"
 printf 'PASS claude_plugins_test\n'

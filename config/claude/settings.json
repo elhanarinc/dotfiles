@@ -443,17 +443,28 @@
   },
   "enabledPlugins": {
     "claude-hud@claude-hud": true,
-    "gopls-lsp@claude-plugins-official": false,
+    "gopls-lsp@claude-plugins-official": true,
     "frontend-design@claude-plugins-official": true,
-    "context7@claude-plugins-official": false,
     "swift-lsp@claude-plugins-official": true,
-    "superpowers@claude-plugins-official": true
+    "superpowers@superpowers-marketplace": true
   },
   "extraKnownMarketplaces": {
     "claude-hud": {
       "source": {
         "source": "github",
         "repo": "jarrodwatts/claude-hud"
+      }
+    },
+    "superpowers-marketplace": {
+      "source": {
+        "source": "github",
+        "repo": "obra/superpowers-marketplace"
+      }
+    },
+    "impeccable": {
+      "source": {
+        "source": "github",
+        "repo": "pbakaus/impeccable"
       }
     }
   },

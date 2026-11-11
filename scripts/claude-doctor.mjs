@@ -39,7 +39,9 @@ try {
 }
 
 // Compare with $HOME expanded and shell quoting dropped, so "$HOME/x" and the expanded home path match.
-const norm = (v) => JSON.stringify(v).split('$HOME').join(home).split('\\"').join('');
+// Key order is not drift: sort object keys recursively before comparing.
+const canon = (v) => (Array.isArray(v) ? v.map(canon) : v && typeof v === "object" ? Object.fromEntries(Object.keys(v).sort().map((k) => [k, canon(v[k])])) : v);
+const norm = (v) => JSON.stringify(canon(v)).split('$HOME').join(home).split('\\"').join('');
 const same = (a, b) => norm(a) === norm(b);
 const tilde = (s) => s.split(home).join('~');
 // Keys Claude Code writes itself (install/survey state) are not configuration drift.
