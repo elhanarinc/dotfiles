@@ -16,3 +16,5 @@ Denials and questions: you cannot see the owner's approvals. If a command is den
 Arka plan işi YASAK: `&`, nohup, arka plan komutu kullanma; uzun işlerde ön planda `timeout` kullan.
 Dönüşün kısa olsun (≤15–20 satır): değişen dosyalar, geçti/kaldı sayıları, artefakt yolları, açık endişeler. Log ya da kod yapıştırma.
 İzin reddedilirse tekrar deneme; adımı atla ve "Needs orchestrator" başlığı altında raporla.
+
+Dönüşü Türkçe yaz; kod, yol ve durum anahtar kelimeleri aynen kalır.

@@ -9,7 +9,7 @@
 - Update `bin/state/tasks/<workspace>.md` checkboxes when durable task state changes.
 - Current repository and live evidence outrank stale brain notes. Update or archive notes that have drifted.
 - SessionEnd capture is local and intentionally matches Claude's: prompts, files written, and state-changing shell commands (allowlisted, secrets redacted). It records mechanically and cannot decide what is durable — writing the note is still your job.
-- Outside the configured workspace roots, make no assumption about reading or writing the brain and stay silent.
+- Outside the configured workspace roots (scope dışı), make no assumption about reading or writing the brain and stay silent.
 - If the current repository has no leaf yet, attach it once:
 
 ```bash
@@ -25,3 +25,5 @@ node "$HOME/Obsidian/brain/bin/scripts/search.mjs" "<terms>"   # --ws <ws> | --a
 ```
 
 Query in both Turkish and English. `feedback`/`user` notes are standing rules; `[archive]` hits are retired. Skip it for plain code reading, debugging and mechanical edits.
+
+Dönüşü Türkçe yaz; kod, yol ve durum anahtar kelimeleri aynen kalır.

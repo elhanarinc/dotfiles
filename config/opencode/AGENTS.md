@@ -10,3 +10,4 @@
 - Sırlar: `service.json` ve `auth.json` okunmaz, yazdırılmaz.
 - Arka plan işi yok: `&`, nohup, arka plan komutu kullanma; uzun işlerde ön planda `timeout`.
 - Çıktı hijyeni: uzun çıktıyı dosyaya yönlendir, tail/grep ile oku.
+- Dönüşü Türkçe yaz; kod, yol ve durum anahtar kelimeleri aynen kalır.

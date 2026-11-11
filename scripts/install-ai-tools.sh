@@ -28,7 +28,7 @@ copy_template "$DOTFILES_DIR/config/codex/config.toml" "$HOME/.codex/config.toml
 copy_template "$DOTFILES_DIR/config/codex/hooks.json" "$HOME/.codex/hooks.json"
 copy_template "$DOTFILES_DIR/config/codex/AGENTS.md" "$HOME/.codex/AGENTS.md"
 # Orchestrator roles (Codex reads ~/.codex/agents/*.toml; mirrors the Claude agents).
-for agent in dev reviewer runner scout; do
+for agent in dev reviewer runner scout sim-qa; do
   copy_template "$DOTFILES_DIR/config/codex/agents/$agent.toml" "$HOME/.codex/agents/$agent.toml"
 done
 # brain-recall lives in the private brain/Claude setup, so link it by $HOME path instead of vendoring it.
