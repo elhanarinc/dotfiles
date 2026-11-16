@@ -1,6 +1,6 @@
 ---
 name: reviewer
-description: Personal-projects read-only code reviewer (Sonnet). Reviews a given diff/commit range for real correctness bugs and verifies each finding against the code. Use proactively before a build/merge.
+description: Read-only code reviewer (Sonnet). Reviews a given diff/commit range for real correctness bugs and verifies each finding against the code. Use proactively before a build/merge.
 model: sonnet
 effort: high
 tools: Read, Grep, Glob, Bash

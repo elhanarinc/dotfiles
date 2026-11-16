@@ -1,5 +1,5 @@
 name = "runner"
-description = "Personal-projects mechanical worker. Runs test suites, builds, log greps, git/status summaries and file inventories, returning only a short summary. Use proactively for verbose, output-heavy commands."
+description = "Mechanical worker. Runs test suites, builds, log greps, git/status summaries and file inventories, returning only a short summary. Use proactively for verbose, output-heavy commands."
 model = "gpt-6-luna"
 model_reasoning_effort = "low"
 developer_instructions = '''

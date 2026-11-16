@@ -1,5 +1,5 @@
 name = "reviewer"
-description = "Personal-projects read-only code reviewer. Reviews a given diff/commit range for real correctness bugs and verifies each finding against the code. Use proactively before a build/merge."
+description = "Read-only code reviewer. Reviews a given diff/commit range for real correctness bugs and verifies each finding against the code. Use proactively before a build/merge."
 model = "gpt-6.1-sol"
 model_reasoning_effort = "high"
 sandbox_mode = "read-only"

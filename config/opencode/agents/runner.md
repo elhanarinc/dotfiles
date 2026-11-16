@@ -1,5 +1,5 @@
 ---
-description: Personal-projects mechanical worker. Runs test suites, builds, log greps, git/status summaries and file inventories, returning only a short summary.
+description: Mechanical worker. Runs test suites, builds, log greps, git/status summaries and file inventories, returning only a short summary.
 mode: subagent
 model: opencode-go/glm-5.3-flash
 steps: 25

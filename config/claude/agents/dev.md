@@ -1,6 +1,6 @@
 ---
 name: dev
-description: Personal-projects implementer (Sonnet). Executes a scoped, well-briefed code/test/doc change and runs the given verification. Use proactively for plain developer work the orchestrator has already decided.
+description: Implementer (Sonnet). Executes a scoped, well-briefed code/test/doc change and runs the given verification. Use proactively for plain developer work the orchestrator has already decided.
 model: sonnet
 effort: medium
 ---

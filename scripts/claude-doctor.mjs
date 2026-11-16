@@ -22,6 +22,25 @@ let findings = 0;
 const note = (msg) => { findings += 1; console.log(`[WARN] ${msg}`); };
 const hint = (msg) => console.log(`       ${msg}`);
 
+// 0. role agents: copy_template() never overwrites an existing file, so edits to
+// config/{claude,codex}/agents do not reach a configured machine by themselves.
+const repoRoot = path.join(here, '..');
+for (const [dir, ext] of [['claude', 'md'], ['codex', 'toml']]) {
+  const srcDir = path.join(repoRoot, 'config', dir, 'agents');
+  if (!fs.existsSync(srcDir)) continue;
+  for (const name of fs.readdirSync(srcDir).filter((f) => f.endsWith(`.${ext}`)).sort()) {
+    const srcFile = path.join(srcDir, name);
+    const liveFile = path.join(home, `.${dir}`, 'agents', name);
+    if (!fs.existsSync(liveFile)) continue; // not installed yet: the installer copies it
+    let same2 = false;
+    try { same2 = fs.readFileSync(srcFile, 'utf8') === fs.readFileSync(liveFile, 'utf8'); } catch { /* unreadable counts as drift */ }
+    if (same2) continue;
+    note(`agent drift: ${liveFile.split(home).join("~")} differs from dotfiles source`);
+    hint(`fix (adopt dotfiles version): cp "${srcFile}" "${liveFile}"`);
+    hint(`or, if the live copy is newer: cp "${liveFile}" "${srcFile}"`);
+  }
+}
+
 if (!fs.existsSync(livePath)) {
   console.log(`[INFO] no live settings at ${livePath}; nothing to compare`);
   process.exit(0);

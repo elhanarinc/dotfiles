@@ -19,6 +19,8 @@ const MIN_PROMPTS = 1;
 const MAX_AGE_MS = 90 * 24 * 60 * 60 * 1000;
 const MAX_PER_RUN = 10;
 const OPENCODE = process.env.OPENCODE_BIN || 'opencode';
+// Kalıcı deny filtresi: bu konular hiç inbox'a yazılmasın (2026-11-11).
+export const DENY_PATTERNS = [/facefusion/i, /deepfake/i, /face[-_ ]?swap/i, /\bnsfw\b/i, /\bnud(e|ity)\b/i, /cinsel/i, /yüz değiştir/i];
 
 export const cliStore = (n = 100) => ({
   list: () => JSON.parse(execFileSync(OPENCODE, ['session', 'list', '--format', 'json', '-n', String(n)],
@@ -122,6 +124,8 @@ export function captureSince({ store, statePath = STATE_PATH, now = Date.now(), 
     if (now - last > maxAgeMs) { mark('stale'); result.skipped.push(id); continue; }
     if (result.captured.length >= maxPerRun) { result.skipped.push(id); continue; } // sonraki çalıştırmada
     const scan = scanSession(doc, cwd);
+    const deniedHit = scan.prompts.find((p) => DENY_PATTERNS.some((re) => re.test(p)));
+    if (deniedHit) { mark('denied'); result.skipped.push(id); continue; }
     if (scan.prompts.length < MIN_PROMPTS) { mark('too-short'); result.skipped.push(id); continue; }
     const endedAt = new Date(last);
     const day = endedAt.toISOString().slice(0, 10);

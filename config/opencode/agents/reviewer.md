@@ -1,5 +1,5 @@
 ---
-description: Personal-projects read-only code reviewer. Reviews a given diff/commit range for real correctness bugs and verifies each finding against the code.
+description: Read-only code reviewer. Reviews a given diff/commit range for real correctness bugs and verifies each finding against the code.
 mode: subagent
 model: opencode-go/deepseek-v4-pro
 steps: 25

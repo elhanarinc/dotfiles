@@ -1,5 +1,5 @@
 name = "dev"
-description = "Personal-projects implementer. Executes a scoped, well-briefed code/test/doc change and runs the given verification. Use proactively for plain developer work the orchestrator has already decided."
+description = "Implementer. Executes a scoped, well-briefed code/test/doc change and runs the given verification. Use proactively for plain developer work the orchestrator has already decided."
 model = "gpt-6.1-sol"
 model_reasoning_effort = "medium"
 developer_instructions = '''

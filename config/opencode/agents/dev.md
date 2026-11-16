@@ -1,5 +1,5 @@
 ---
-description: Personal-projects implementer. Executes a scoped, well-briefed code/test/doc change and runs the given verification.
+description: Implementer. Executes a scoped, well-briefed code/test/doc change and runs the given verification.
 mode: subagent
 model: opencode-go/mimo-v2.6-flash
 steps: 40

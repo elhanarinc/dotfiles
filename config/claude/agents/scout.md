@@ -1,6 +1,6 @@
 ---
 name: scout
-description: Personal-projects read-only code finder (Haiku). Locates files, symbols, call sites and conventions and returns paths with line numbers. Use instead of the built-in Explore in personal repos.
+description: Read-only code finder (Haiku). Locates files, symbols, call sites and conventions and returns paths with line numbers. Use instead of the built-in Explore, which inherits the main model.
 model: haiku
 effort: low
 tools: Read, Grep, Glob, Bash

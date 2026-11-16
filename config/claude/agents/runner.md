@@ -1,6 +1,6 @@
 ---
 name: runner
-description: Personal-projects mechanical worker (Haiku). Runs test suites, builds, log greps, git/status summaries and file inventories, returning only a short summary. Use proactively for verbose, output-heavy commands.
+description: Mechanical worker (Haiku). Runs test suites, builds, log greps, git/status summaries and file inventories, returning only a short summary. Use proactively for verbose, output-heavy commands.
 model: haiku
 effort: low
 ---

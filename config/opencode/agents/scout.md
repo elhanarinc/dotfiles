@@ -1,5 +1,5 @@
 ---
-description: Personal-projects read-only code finder. Locates files, symbols, call sites and conventions and returns paths with line numbers.
+description: Read-only code finder. Locates files, symbols, call sites and conventions and returns paths with line numbers.
 mode: subagent
 model: opencode-go/qwen3.8-flash
 steps: 20
