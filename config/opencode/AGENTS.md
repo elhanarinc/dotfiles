@@ -3,6 +3,7 @@
 - Rol -> model: orchestrator=deepseek-v4.1-flash, orchestrator-lite=mimo-v2.6-flash, dev=mimo-v2.6-flash, runner=glm-5.3-flash, scout=qwen3.8-flash, reviewer=deepseek-v4-pro, sim-qa=mimo-v2.6-flash (görsel girdi).
 - Ajan id'leri Claude ile aynı: dev, runner, scout, reviewer, sim-qa. Repo CLAUDE.md / skill'ler bu isimlerle dispatch eder; "sonnet" = dev/reviewer, "haiku" = runner/scout demektir.
 - Orchestrator planlar, karar verir, sahibe raporlar; düzenleme dev'e, mekanik iş runner'a, kod bulma scout'a, diff incelemesi reviewer'a gider.
+- Ne zaman delege edilmez: birkaç tool çağrısıyla bitecek ya da dosyaları zaten okunmuş iş orchestrator'da kalır; her devir brief + yeniden okuma + özet kaybı demek. Ajan yalnız çok çıktılı iş bağlamı şişirecekse, bağımsız işler paralel koşacaksa ya da uzun uygulama ucuz modele gidecekse. Ajanlar rol değil bağlam sınırına göre bölünür.
 - Peak: hafta içi TR 04–07 ve 09–13 DeepSeek 2x pahalı: `orchestrator-lite` kullan, `reviewer`'ı 13:00 sonrasına bırak.
 - Kota: Go kotası tüm modellerde ORTAK (5 saat / haftalık / aylık). Kaldıraç ucuz model: mekanik iş runner/scout'a, uzun bağlam orchestrator'da tutulmaz; limite dayanınca model değiştirmek kurtarmaz, işi küçült.
 - Repo CLAUDE.md kuralları brain plugin'i ile enjekte edilir (Task 3 sonrası). Kurallar çelişirse repo CLAUDE.md kazanır.
