@@ -33,7 +33,17 @@ update_claude() {
   run nice -n 15 claude plugin marketplace update
 }
 
+# Claude/brain hooks run on Homebrew node; an interrupted `brew upgrade` can leave it
+# linked against a removed dylib (2026-11-18: llhttp upgraded, node not) and every hook dies.
+check_hook_node() {
+  local node="${HOOK_NODE:-/opt/homebrew/bin/node}"
+  [[ -x "$node" ]] || { warn "hook node missing: $node"; return 0; }
+  if "$node" -v >/dev/null 2>&1; then success "hook node ok: $("$node" -v)"
+  else warn "hook node broken: $node (hooks will fail) — run: brew upgrade node"; return 1; fi
+}
+
 step "homebrew" update_brew
+step "hook node" check_hook_node
 step "oh-my-zsh" update_omz
 step "tmux plugins" update_tpm
 step "vscode extensions" update_code

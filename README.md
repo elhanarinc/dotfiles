@@ -42,7 +42,7 @@ macOS only, Apple Silicon first; everything is installed through Homebrew where 
 ## What it manages
 
 - Homebrew and CLI tools: Git/GitHub CLI, modern shell tools, tmux, Vim, Go, Node, Python/pyenv/uv, Ruby, Java 17, AWS CLI, kubectl, Helm, eksctl, Terraform, media/document utilities, and formatters.
-- Applications: Docker Desktop, VS Code, Ghostty, Chrome, Spotify, Slack, Obsidian, Postman, Headlamp, Caffeine, ChatGPT, Claude, iTerm2, and general desktop utilities.
+- Applications: Docker Desktop, VS Code, Ghostty, Chrome, Spotify, Slack, Obsidian, Caffeine, ChatGPT, Claude, iTerm2, and general desktop utilities.
 - Shell: Oh My Zsh, autosuggestions, syntax highlighting, fzf-tab, you-should-use, Starship, NVM, TPM, and fzf integration.
 - Allowlisted dotfile links with timestamped backups under `~/.dotfiles_backup/`.
 - VS Code settings, MCP template, snippets, and extensions.

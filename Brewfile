@@ -83,12 +83,12 @@ brew "sentry-cli"       # Upload dSYMs / create releases
 brew "create-dmg"       # Build a distributable .dmg
 brew "fileicon"         # Set custom file/folder icons on build artifacts
 
-# XcodeBuildMCP CLI: agent-facing wrapper over xcodebuild/simctl (build, run,
+# MobileBuildMCP CLI (formerly XcodeBuildMCP): agent-facing wrapper over xcodebuild/simctl (build, run,
 # test, log, UI automation). Third-party tap, so a fresh machine needs
 # `brew trust getsentry/xcodebuildmcp` before `brew bundle` can load the
 # formula — `brew bundle` cannot express tap trust on its own.
 tap "getsentry/xcodebuildmcp"
-brew "getsentry/xcodebuildmcp/xcodebuildmcp"
+brew "getsentry/xcodebuildmcp/mobilebuildmcp"  # upstream renamed XcodeBuildMCP -> MobileBuildMCP (xcodebuildmcp frozen at 2.7.0)
 
 # ============================================================
 # Cloud & DevOps
@@ -143,22 +143,17 @@ cask "google-chrome"        # Browser
 cask "spotify"              # Music
 cask "slack"                # Team communication
 cask "obsidian"             # Knowledge base
-cask "postman"              # API client
-cask "headlamp"             # Kubernetes desktop client (replaced Lens)
 cask "caffeine"             # Keep Mac awake (installed copy is 1.6.4 vs cask 1.1.4 — cannot --adopt)
 cask "chatgpt"              # ChatGPT desktop
 cask "claude"               # Claude desktop
 
 # General-purpose utilities used on the current workstation
-cask "maccy"                # Clipboard manager
 cask "jordanbaird-ice"      # Menu bar manager
-cask "hiddenbar"            # Lightweight menu bar utility
 cask "tablepro"             # Database client (TablePro; TablePlus was never installed here).
                             # Installed copy is 0.27.2 vs cask 0.67.1 — cannot --adopt; upgrade in-app first.
 cask "react-native-debugger"
 cask "android-platform-tools"
 cask "codex"                # Codex CLI
-cask "codexbar"             # Codex menu-bar companion
 
 # ============================================================
 # Java

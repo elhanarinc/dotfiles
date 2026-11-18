@@ -15,4 +15,11 @@ assert_contains "$out" "brew bundle --file="
 assert_contains "$out" "code --update-extensions"
 assert_contains "$out" "claude plugin marketplace update"
 [[ "$out" != *cleanup* ]] || fail "update must never cleanup"
+# A node that cannot start (missing dylib) is reported, not silently passed.
+printf '#!/bin/sh\nexit 134\n' > "$TEST_ROOT/bin/badnode"; chmod +x "$TEST_ROOT/bin/badnode"
+out="$(HOOK_NODE="$TEST_ROOT/bin/badnode" DRY_RUN=1 "$REPO_ROOT/scripts/update.sh" 2>&1)"
+assert_contains "$out" "hook node broken"
+printf '#!/bin/sh\necho v26.0.0\n' > "$TEST_ROOT/bin/goodnode"; chmod +x "$TEST_ROOT/bin/goodnode"
+out="$(HOOK_NODE="$TEST_ROOT/bin/goodnode" DRY_RUN=1 "$REPO_ROOT/scripts/update.sh" 2>&1)"
+assert_contains "$out" "hook node ok: v26.0.0"
 printf 'PASS update_test\n'
